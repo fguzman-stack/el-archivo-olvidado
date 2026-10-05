@@ -5,6 +5,8 @@ import {AudioEngine} from '../services/audio-engine';
 import {EffectsController} from '../services/effects';
 import {Character, CATEGORY_COLORS} from '../data/characters.data';
 import {MatIconModule} from '@angular/material/icon';
+import {CharacterAtmosphere} from './character-atmosphere';
+import {CharacterPortraitPipe} from './character-portrait.pipe';
 
 export type DossierSheet = 'profile' | 'evidence' | 'connections';
 type DossierEffect =
@@ -22,7 +24,7 @@ type DossierEffect =
 @Component({
   selector: 'app-case-file',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatIconModule],
+  imports: [MatIconModule, CharacterAtmosphere, CharacterPortraitPipe],
   template: `
     @if (theme.selectedCharacter(); as char) {
       <div
@@ -92,6 +94,8 @@ type DossierEffect =
             >
               @let dossierEffect = getDossierEffect(char);
               @let intensity = dossierEffectIntensity();
+
+              <app-character-atmosphere [signature]="char.signature" [seed]="char.id.length" />
 
               <div class="absolute inset-0 pointer-events-none z-0 dossier-effect-layer" [attr.data-effect]="dossierEffect">
                 @if (dossierEffect === 'blood') {
@@ -302,7 +306,7 @@ type DossierEffect =
                             viewBox="0 0 100 100"
                             class="w-4/5 h-4/5 relative z-5 transition-transform duration-500 hover:scale-105"
                             [class.animate-char-twitch]="hasGlitch"
-                            [innerHTML]="char.silhouetteSvg"
+                            [innerHTML]="char | characterPortrait"
                           ></svg>
 
                           <!-- Demonic Glowing Eyes -->
@@ -393,6 +397,17 @@ type DossierEffect =
                         <p class="font-fell text-sm sm:text-base md:text-lg leading-relaxed text-[#26201b]">
                           {{ char.summary }}
                         </p>
+                        @if (char.versionNote) {
+                          <p class="font-special text-[11px] mt-3 text-[#675343]">{{ char.versionNote }}</p>
+                        }
+                        @if (char.sources?.length) {
+                          <div class="mt-3 border-t border-black/15 pt-2 font-special text-xs">
+                            <span class="block font-bold text-[#7a1f1a] mb-1">REFERENCIAS DEL EXPEDIENTE:</span>
+                            @for (source of char.sources; track source.url) {
+                              <a [href]="source.url" target="_blank" rel="noopener noreferrer" class="block underline text-[#49392d] py-1">{{ source.label }} ↗</a>
+                            }
+                          </div>
+                        }
                       </div>
 
                       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-black/5 rounded-xs border border-black/10 font-special text-[11px] sm:text-xs text-[#3d2e24]">
@@ -859,6 +874,8 @@ export class CaseFile {
   }
 
   getEyeColor(char: Character): string | null {
+    if (char.signature && !['jeff-the-killer', 'sonic-exe', 'smile-dog', 'ben-drowned'].includes(char.id)) return null;
+    if (['eyeless-jack', 'lulu', 'slender-man', 'masky', 'hoodie', 'skully', 'splendorman', 'offenderman'].includes(char.id)) return null;
     if (char.id.includes('jeff') || char.id.includes('sonic') || char.id.includes('smile')) {
       return '#ff2222';
     }

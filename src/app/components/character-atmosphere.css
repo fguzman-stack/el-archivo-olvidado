@@ -1,0 +1,27 @@
+:host { position:absolute; inset:0; display:block; pointer-events:none; overflow:hidden; }
+.signature-field { position:absolute; inset:0; color:var(--signature-color); opacity:.42; overflow:hidden; }
+.signature-mark { position:absolute; font:24px Georgia,serif; animation:haunt-drift calc(5s + var(--i) * .4s) ease-in-out infinite; opacity:.5; }
+.signature-edge { position:absolute; inset:0; box-shadow:inset 0 0 55px var(--signature-color); opacity:.22; }
+[data-kind="paint"] .signature-mark { width:22%; height:7px; background:currentColor; font-size:0; border-radius:65% 12% 80% 30%; transform:rotate(-14deg); animation:paint-reveal 5s ease-in-out infinite; box-shadow:0 7px 0 -2px currentColor,0 14px 0 -3px currentColor; }
+[data-kind="blood"] .signature-mark { width:6px; height:60px; font-size:0; background:linear-gradient(currentColor,transparent); border-radius:0 0 90% 90%; transform-origin:top; animation:blood-fall 6s ease-in-out infinite; }
+[data-kind="threads"] .signature-mark { width:1px; height:100%; top:0!important; background:linear-gradient(currentColor,transparent); transform-origin:top; animation:thread-pull 7s ease-in-out infinite; font-size:16px; }
+[data-kind="stitches"] .signature-mark { border-bottom:2px dashed currentColor; width:15%; transform:rotate(-25deg); font-size:16px; }
+[data-kind="petals"] .signature-mark { animation:petal-fall 9s linear infinite; font-size:35px; }
+[data-kind="candy"] .signature-mark { animation:candy-spin 9s linear infinite; border:1px solid currentColor; padding:2px 8px; border-radius:35%; }
+[data-kind="static"] .signature-mark { animation:signal-shift 5s steps(1) infinite; font:22px monospace; border-bottom:2px solid currentColor; }
+[data-kind="blades"] .signature-mark { width:2px; height:95px; background:linear-gradient(transparent,currentColor,transparent); transform:rotate(35deg); font-size:0; animation:paint-reveal 7s ease-in-out infinite; }
+[data-kind="specter"] .signature-mark { filter:blur(1px); font-size:42px; animation:haunt-drift 8s ease-in-out infinite; }
+.signature-clock,.signature-eye { position:absolute; width:170px; right:-40px; bottom:12%; fill:none; stroke:currentColor; stroke-width:2; opacity:.6; }
+.clock-hand { transform-origin:50px 50px; animation:candy-spin 18s linear infinite; }
+.signature-eye { width:140px; animation:haunt-drift 6s ease-in-out infinite; }
+.compact { opacity:.6; }
+.compact .signature-mark { font-size:14px; }
+.compact .signature-clock,.compact .signature-eye { width:65px; right:-5px; }
+@keyframes haunt-drift { 0%,100% { translate:0 0; opacity:.12; } 50% { translate:3px -14px; opacity:.65; } }
+@keyframes paint-reveal { 0%,100% { scale:.2 1; opacity:.1; } 50% { scale:1 1; opacity:.65; } }
+@keyframes blood-fall { 0% { scale:1 .1; opacity:0; } 70% { scale:1 1.4; opacity:.75; } 100% { scale:1 1.8; opacity:0; } }
+@keyframes thread-pull { 0%,100% { rotate:-5deg; } 50% { rotate:5deg; } }
+@keyframes petal-fall { from { translate:0 -100px; rotate:0deg; opacity:0; } 25% { opacity:.7; } to { translate:30px 300px; rotate:100deg; opacity:0; } }
+@keyframes candy-spin { to { rotate:360deg; } }
+@keyframes signal-shift { 0%,85%,100% { translate:0 0; } 88% { translate:10px -3px; } 92% { translate:-5px 5px; } }
+@media(prefers-reduced-motion:reduce) { *, .signature-mark, .clock-hand { animation:none!important; opacity:.3; } }

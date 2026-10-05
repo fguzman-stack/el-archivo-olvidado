@@ -416,3 +416,7 @@
 .game-placeholder { display:grid; place-items:center; height:100%; color:#b18860; font:12px monospace; background:#050807; }
 @media(max-width:640px) { .game-section { padding:66px 12px 90px; gap:12px; } .game-heading { flex-direction:column; align-items:flex-start; gap:6px; } .game-controls { font-size:9px; } .blood-corner { width:75px; height:100px; } }
 @media(prefers-reduced-motion:reduce) { .camera-interruption,.animate-dossier-blood-splash { animation:none; } }
+/* Dedicated entry to the full-window game, keeping the archive's brass/crimson palette. */
+.new-tab-game { display:block; width:fit-content; margin-top:8px; padding:10px 14px; border:1px solid #8a5b40; background:#4f251e; color:#e5cfaa; font:11px monospace; text-decoration:none; letter-spacing:1px; }
+.new-tab-game:hover { background:#79392c; }
+.new-tab-game:focus-visible { outline:2px solid #d9a441; outline-offset:3px; }

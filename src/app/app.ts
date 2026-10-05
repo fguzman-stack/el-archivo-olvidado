@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  AfterViewInit,
   Component,
   ElementRef,
   HostListener,
@@ -26,6 +27,7 @@ import {ThemeController} from './services/theme';
 import {EffectsController} from './services/effects';
 import {SanityController} from './services/sanity';
 import {AudioEngine} from './services/audio-engine';
+import {GameRoom} from './components/game-room';
 
 @Component({
   selector: 'app-root',
@@ -43,18 +45,20 @@ import {AudioEngine} from './services/audio-engine';
     CaseFile,
     SanityHud,
     HallucinationOverlay,
+    GameRoom,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit, OnDestroy {
+export class App implements OnInit, AfterViewInit, OnDestroy {
+  readonly standaloneGame = new URLSearchParams(window.location.search).get('play') === '1';
   flashlight = inject(FlashlightController);
   theme = inject(ThemeController);
   effects = inject(EffectsController);
   sanity = inject(SanityController);
   audio = inject(AudioEngine);
 
-  @ViewChild('scrollContainer', {static: true})
+  @ViewChild('scrollContainer')
   scrollContainerRef!: ElementRef<HTMLDivElement>;
 
   readonly activeSection = signal<SectionId>('informacion');
@@ -63,12 +67,18 @@ export class App implements OnInit, OnDestroy {
   private hasInteracted = false;
 
   ngOnInit(): void {
-    this.flashlight.init();
-    this.setupIntersectionObserver();
+    if (!this.standaloneGame) this.flashlight.init();
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.standaloneGame) {
+      this.setupIntersectionObserver();
+      if (window.location.hash === '#juego') setTimeout(() => this.scrollToSection('juego'));
+    }
   }
 
   ngOnDestroy(): void {
-    this.flashlight.destroy();
+    if (!this.standaloneGame) this.flashlight.destroy();
     if (this.observer) {
       this.observer.disconnect();
     }

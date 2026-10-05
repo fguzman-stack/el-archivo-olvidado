@@ -6,11 +6,13 @@ import {AudioEngine} from '../services/audio-engine';
 import {SanityController} from '../services/sanity';
 import {BloodDrip} from './blood-drip';
 import {MatIconModule} from '@angular/material/icon';
+import {CharacterAtmosphere} from './character-atmosphere';
+import {CharacterPortraitPipe} from './character-portrait.pipe';
 
 @Component({
   selector: 'app-archive-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BloodDrip, MatIconModule],
+  imports: [BloodDrip, MatIconModule, CharacterAtmosphere, CharacterPortraitPipe],
   template: `
     <section
       id="informacion"
@@ -97,7 +99,7 @@ import {MatIconModule} from '@angular/material/icon';
 
         <!-- The Evidence Wall Grid of Enhanced Polaroids -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4 md:gap-8 max-w-7xl mx-auto py-2 sm:py-4 pb-24 sm:pb-24">
-          @for (char of characters; track char.id) {
+          @for (char of filteredCharacters(); track char.id) {
             @let isMatch = isCharacterMatch(char);
             @let isReviewed = progress.reviewedCharacterIds().has(char.id);
             @let eyeColor = getEyeColor(char);
@@ -107,6 +109,8 @@ import {MatIconModule} from '@angular/material/icon';
 
             <article
               (mouseenter)="onHover(char)"
+              (focus)="onHover(char)"
+              (blur)="onLeave()"
               (mouseleave)="onLeave()"
               (click)="openCase(char)"
               [class.opacity-30]="!isMatch"
@@ -165,7 +169,7 @@ import {MatIconModule} from '@angular/material/icon';
                   viewBox="0 0 100 100"
                   class="w-4/5 h-4/5 transition-transform duration-500 group-hover:scale-110 relative z-5"
                   [class.animate-char-twitch]="hasGlitch"
-                  [innerHTML]="char.silhouetteSvg"
+                  [innerHTML]="char | characterPortrait"
                 ></svg>
 
                 <!-- 6. Demonic Glowing Eyes Overlay (Visible on mobile, intensifies on hover) -->
@@ -179,6 +183,10 @@ import {MatIconModule} from '@angular/material/icon';
                       <span class="w-1.5 h-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]"></span>
                     </div>
                   </div>
+                }
+
+                @if (theme.hoveredCharacter()?.id === char.id) {
+                  <app-character-atmosphere [signature]="char.signature" [compact]="true" [seed]="char.id.length" />
                 }
 
                 <!-- 7. Dark Vignette overlay -->
@@ -294,6 +302,8 @@ export class ArchiveSection {
   }
 
   getEyeColor(char: Character): string | null {
+    if (char.signature && !['jeff-the-killer', 'sonic-exe', 'smile-dog', 'ben-drowned'].includes(char.id)) return null;
+    if (['eyeless-jack', 'lulu', 'slender-man', 'masky', 'hoodie', 'skully', 'splendorman', 'offenderman'].includes(char.id)) return null;
     if (char.id.includes('jeff') || char.id.includes('sonic') || char.id.includes('smile')) {
       return '#ff2222'; // Blood red
     }

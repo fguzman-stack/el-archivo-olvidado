@@ -43,6 +43,14 @@ export class GameEngine {
   readonly gameTime = signal<number>(0);
   readonly loreFound = signal<string[]>([]);
   readonly creatureState = signal<CreatureState>('PATROL');
+  readonly painterState = signal<CreatureState>('PATROL');
+  readonly killedBy = signal<'jeff' | 'painter'>('jeff');
+  painterX = 0;
+  painterY = 0;
+  private painterTarget = {x: 0, y: 0};
+  private painterWait = 0;
+  private painterStun = 0;
+  private routeCache = new Map<string, number[]>();
 
   // Maze dimensions
   readonly cols = 15;
@@ -91,6 +99,7 @@ export class GameEngine {
   startNewGame(): void {
     this.paused = false;
     this.generateMaze();
+    this.routeCache.clear();
     this.spawnEntities();
     this.battery.set(100);
     this.sanity.set(100);
@@ -102,6 +111,7 @@ export class GameEngine {
     this.creatureState.set('PATROL');
     this.creatureIlluminatedTimer = 0;
     this.creatureStunTimer = 0;
+    this.painterState.set('PATROL'); this.painterWait = 0; this.painterStun = 0; this.killedBy.set('jeff');
     this.status.set('PLAYING');
 
     if (this.timerInterval) clearInterval(this.timerInterval);
@@ -251,6 +261,9 @@ export class GameEngine {
     this.creatureY = (this.rows - 2) * this.cellSize + this.cellSize * 0.5;
     this.creatureTargetX = this.creatureX;
     this.creatureTargetY = this.creatureY;
+    this.painterX = 10 * this.cellSize + this.cellSize / 2;
+    this.painterY = 4 * this.cellSize + this.cellSize / 2;
+    this.painterTarget = {x: this.painterX, y: this.painterY};
 
     // Adjust creature speed by difficulty
     const diff = this.difficulty();
@@ -287,6 +300,7 @@ export class GameEngine {
     const quotes = [
       'Slender Man: «No intentes mirar las ramas...»',
       'Jeff: «Ve a dormir antes de las tres...»',
+      'Bloody Painter: las sonrisas rojas marcan su taller. La linterna lo frena; no te acerques a la máscara.',
       'Backrooms: «Si sientes que el suelo cede, no grites...»',
       'El Silbón: «Cuando lo oyes lejos, está a tu espalda...»',
     ];
@@ -353,6 +367,7 @@ export class GameEngine {
 
     // Creature AI update
     this.updateCreatureAI(delta);
+    this.updatePainterAI(delta);
 
     // Sanity calculation
     const distToCreature = Math.hypot(this.playerX - this.creatureX, this.playerY - this.creatureY);
@@ -365,13 +380,51 @@ export class GameEngine {
     }
 
     // Creature catches player
-    if (distToCreature < 18) {
-      this.status.set('LOST');
-      if (this.timerInterval) clearInterval(this.timerInterval);
-      this.effects.triggerGlitch(5, 600);
-      this.effects.triggerDirectSubliminal('IT\'S ME');
-      this.globalSanity.drainSanity(50, 'Captura fatal');
+    if (distToCreature < 18 && this.hasLineOfSight(this.creatureX, this.creatureY)) {
+      this.lose('jeff');
     }
+  }
+
+  private lose(killer: 'jeff' | 'painter'): void {
+    if (this.status() !== 'PLAYING') return;
+    this.killedBy.set(killer); this.status.set('LOST');
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.effects.triggerGlitch(5, 600);
+    this.effects.triggerDirectSubliminal('IT\'S ME');
+    this.globalSanity.drainSanity(50, 'Captura fatal');
+  }
+
+  private updatePainterAI(delta: number): void {
+    if (this.gameTime() < 12) return;
+    if (this.painterStun > 0) { this.painterStun -= delta; this.painterState.set('STUNNED'); return; }
+    const dx = this.painterX - this.playerX; const dy = this.painterY - this.playerY;
+    const distance = Math.hypot(dx, dy);
+    const visible = distance < 125 && this.hasLineOfSight(this.painterX, this.painterY);
+    const angle = Math.atan2(dy, dx) - this.playerAngle;
+    const illuminated = visible && this.battery() > 0 && Math.abs(this.playerPitch) < .35 && Math.abs(Math.atan2(Math.sin(angle), Math.cos(angle))) < .4;
+    if (distance < 16 && visible) { this.lose('painter'); return; }
+    if (illuminated) {
+      this.painterState.set('ALERT'); this.painterWait += delta;
+      if (this.painterWait > 1.2) { this.painterStun = 3.5; this.painterWait = 0; this.encounter.set('Bloody Painter protege su máscara de la luz. Aprovecha para alejarte.'); }
+      return;
+    }
+    this.painterWait = Math.max(0, this.painterWait - delta);
+    this.painterState.set(visible ? 'CHASE' : 'PATROL');
+    if (visible) this.painterTarget = {x: this.playerX, y: this.playerY};
+    else if (Math.hypot(this.painterTarget.x - this.painterX, this.painterTarget.y - this.painterY) < 10) {
+      const room = [[5, 2], [10, 4], [8, 8]][Math.floor(Math.random() * 3)];
+      this.painterTarget = {x: room[0] * this.cellSize + 16, y: room[1] * this.cellSize + 16};
+    }
+    const next = this.nextWaypoint(this.painterTarget.x, this.painterTarget.y, this.painterX, this.painterY);
+    const length = Math.hypot(next.x - this.painterX, next.y - this.painterY);
+    const speed = this.creatureSpeed * (visible ? .85 : .55) * delta * 60;
+    if (length > .1) {
+      const mx = (next.x - this.painterX) / length * Math.min(length, speed);
+      const my = (next.y - this.painterY) / length * Math.min(length, speed);
+      if (!this.checkWallCollision(this.painterX + mx, this.painterY, 7)) this.painterX += mx;
+      if (!this.checkWallCollision(this.painterX, this.painterY + my, 7)) this.painterY += my;
+    }
+    if (visible && distance < 65) this.sanity.update(value => Math.max(0, value - delta * 2));
   }
 
   private movePlayerWithCollision(dx: number, dy: number): void {
@@ -399,10 +452,10 @@ export class GameEngine {
     const localX = px - cellX * this.cellSize;
     const localY = py - cellY * this.cellSize;
 
-    if (cell.top && localY - radius < 0) return true;
-    if (cell.bottom && localY + radius > this.cellSize) return true;
-    if (cell.left && localX - radius < 0) return true;
-    if (cell.right && localX + radius > this.cellSize) return true;
+    if (cell.top && localY - radius <= 0) return true;
+    if (cell.bottom && localY + radius >= this.cellSize) return true;
+    if (cell.left && localX - radius <= 0) return true;
+    if (cell.right && localX + radius >= this.cellSize) return true;
 
     return false;
   }
@@ -520,12 +573,15 @@ export class GameEngine {
     return true;
   }
 
-  private nextWaypoint(tx: number, ty: number): {x: number; y: number} {
-    const sx = Math.floor(this.creatureX / this.cellSize);
-    const sy = Math.floor(this.creatureY / this.cellSize);
+  private nextWaypoint(tx: number, ty: number, fromX = this.creatureX, fromY = this.creatureY): {x: number; y: number} {
+    const sx = Math.floor(fromX / this.cellSize);
+    const sy = Math.floor(fromY / this.cellSize);
     const gx = Math.floor(tx / this.cellSize);
     const gy = Math.floor(ty / this.cellSize);
     if (sx === gx && sy === gy) return {x: tx, y: ty};
+    const routeKey = `${sx},${sy}:${gx},${gy}`;
+    let next = this.routeCache.get(routeKey);
+    if (!next) {
     const queue = [[sx, sy]];
     const parents = new Map<string, number[]>();
     parents.set(`${sx},${sy}`, [sx, sy]);
@@ -539,17 +595,19 @@ export class GameEngine {
         }
       }
     }
-    let next = [gx, gy];
-    if (!parents.has(`${gx},${gy}`)) return {x: this.creatureX, y: this.creatureY};
+    next = [gx, gy];
+    if (!parents.has(`${gx},${gy}`)) return {x: fromX, y: fromY};
     while (true) {
-      const parent = parents.get(`${next[0]},${next[1]}`)!;
+      const parent: number[] = parents.get(`${next[0]},${next[1]}`)!;
       if (parent[0] === sx && parent[1] === sy) break;
       next = parent;
+    }
+    this.routeCache.set(routeKey, next);
     }
     const centerX = sx * this.cellSize + this.cellSize / 2;
     const centerY = sy * this.cellSize + this.cellSize / 2;
     // Align with the doorway before entering the neighboring room.
-    if ((next[0] !== sx && Math.abs(this.creatureY - centerY) > 2) || (next[1] !== sy && Math.abs(this.creatureX - centerX) > 2)) return {x: centerX, y: centerY};
+    if ((next[0] !== sx && Math.abs(fromY - centerY) > 2) || (next[1] !== sy && Math.abs(fromX - centerX) > 2)) return {x: centerX, y: centerY};
     return {x: next[0] * this.cellSize + this.cellSize / 2, y: next[1] * this.cellSize + this.cellSize / 2};
   }
 }

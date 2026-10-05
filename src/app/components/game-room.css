@@ -1,0 +1,16 @@
+:host { display:block; height:100dvh; }
+.game-room { height:100dvh; display:flex; flex-direction:column; padding:clamp(8px,1.4vw,20px); gap:12px; color:#d6ccb6; background:radial-gradient(ellipse at top,#30201b,#090b0a 65%); font:11px monospace; }
+.room-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px; }
+.room-brand { display:flex; align-items:center; gap:14px; }
+.room-brand span { font-size:9px; letter-spacing:3px; color:#c18a68; }
+.live-dot { width:8px; height:8px; border-radius:50%; background:#b53c32; box-shadow:0 0 15px #be4836; }
+h1 { font:24px 'IM Fell English SC',Georgia,serif; letter-spacing:3px; margin:2px 0 0; }
+h1 small { display:inline-block; font:8px monospace; letter-spacing:1px; color:#7f7d6c; margin-left:12px; }
+nav { display:flex; flex-wrap:wrap; gap:8px; }
+nav a,nav button { padding:10px 12px; color:#d6c3a4; border:1px solid #5a4133; background:#1a1613; text-decoration:none; font:10px monospace; cursor:pointer; }
+nav a:hover,nav button:hover { background:#4b2922; }
+nav :focus-visible { outline:2px solid #d9a441; outline-offset:2px; }
+.room-stage { min-height:0; flex:1; border:1px solid #6d4e39; box-shadow:0 0 0 4px #100d0b,0 20px 80px #0008; overflow:hidden; }
+.room-footer { display:flex; justify-content:space-between; gap:12px; color:#99866e; font-size:9px; letter-spacing:1px; }
+@media(max-width:700px) { .game-room { padding:8px; gap:8px; } h1 small,.room-footer span:last-child { display:none; } nav { width:100%; } nav a,nav button { flex:1; text-align:center; font-size:9px; padding:9px 5px; } .room-footer { font-size:8px; letter-spacing:0; } }
+@media(orientation:landscape) and (max-height:550px) { .game-room { padding:4px; gap:4px; } .room-header { padding:0; flex-wrap:nowrap; } .room-brand > div > span,h1 small,.room-footer { display:none; } h1 { font-size:16px; } nav { width:auto; } nav a,nav button { padding:6px; font-size:9px; } .live-dot { display:none; } }

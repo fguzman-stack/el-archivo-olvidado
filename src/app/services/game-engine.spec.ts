@@ -11,7 +11,7 @@ describe('House game progression', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     TestBed.configureTestingModule({providers: [
-      {provide: AudioEngine, useValue: {playClick: vi.fn(), playHeartbeat: vi.fn(), playFootstep: vi.fn(), playHorrorLaugh: vi.fn(), playWhisperMurmur: vi.fn(), playElevatorBell: vi.fn()}},
+      {provide: AudioEngine, useValue: {playClick: vi.fn(), playHeartbeat: vi.fn(), playFootstep: vi.fn(), playHorrorLaugh: vi.fn(), playWhisperMurmur: vi.fn(), playElevatorBell: vi.fn(), playStaticGlitch: vi.fn()}},
       {provide: ProgressTracker, useValue: {saveMazeScore: vi.fn()}},
       {provide: EffectsController, useValue: {triggerGlitch: vi.fn(), triggerDirectSubliminal: vi.fn()}},
       {provide: SanityController, useValue: {drainSanity: vi.fn(), restoreSanity: vi.fn()}},
@@ -57,6 +57,41 @@ describe('House game progression', () => {
   it('resets camera and inventory when restarting', () => {
     engine.playerPitch = 1; engine.hasKey.set(true); engine.loreFound.set(['old']);
     engine.startNewGame(); expect(engine.playerPitch).toBe(0); expect(engine.hasKey()).toBe(false); expect(engine.loreFound()).toEqual([]);
+  });
+
+  it('lets Bloody Painter capture the player and attributes the ending to him', () => {
+    engine.gameTime.set(13); engine.playerX = engine.painterX; engine.playerY = engine.painterY;
+    engine.update(1 / 60, 0, 0, 0);
+    expect(engine.status()).toBe('LOST'); expect(engine.killedBy()).toBe('painter');
+    const battery = engine.battery(); vi.advanceTimersByTime(2000); expect(engine.battery()).toBe(battery);
+  });
+
+  it('stops Bloody Painter with sustained frontal light and releases him after the stun', () => {
+    engine.gameTime.set(13); engine.creatureStunTimer = 100;
+    engine.playerX = 10 * 32 + 16; engine.playerY = 4 * 32 + 16;
+    engine.painterX = engine.playerX + 24; engine.painterY = engine.playerY;
+    for (let frame = 0; frame < 76; frame++) engine.update(1 / 60, 0, 0, 0);
+    engine.update(1 / 60, 0, 0, 0);
+    expect(engine.painterState()).toBe('STUNNED');
+    const x = engine.painterX; engine.update(1, 0, 0, Math.PI); expect(engine.painterX).toBe(x);
+    for (let frame = 0; frame < 200; frame++) engine.update(1 / 60, 0, 0, Math.PI);
+    expect(engine.painterState()).toBe('CHASE'); expect(engine.painterX).toBeLessThan(x);
+  });
+
+  it('does not let the painter detect or catch a player through a closed wall', () => {
+    engine.gameTime.set(13); engine.creatureStunTimer = 100;
+    engine.grid[4][10].right = true; engine.grid[4][11].left = true;
+    engine.playerX = 11 * 32 + 5; engine.playerY = 4 * 32 + 16;
+    engine.painterX = 11 * 32 - 5; engine.painterY = engine.playerY;
+    engine.update(1 / 60, 0, 0, Math.PI);
+    expect(engine.status()).toBe('PLAYING'); expect(engine.painterState()).toBe('PATROL');
+  });
+
+  it('freezes both enemies during pause and resets the painter on a new game', () => {
+    engine.gameTime.set(13); engine.pauseGame(); const x = engine.painterX;
+    engine.update(1, 0, 0, 0); expect(engine.painterX).toBe(x);
+    engine.killedBy.set('painter'); engine.painterX = 1; engine.startNewGame();
+    expect(engine.painterX).toBe(10 * 32 + 16); expect(engine.painterState()).toBe('PATROL'); expect(engine.killedBy()).toBe('jeff');
   });
 
   it('allows walking through room doorways without crossing closed walls', () => {

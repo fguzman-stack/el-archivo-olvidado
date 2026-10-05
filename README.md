@@ -45,6 +45,10 @@ La aplicación se sirve por defecto en `http://localhost:3000`.
 
 Cada personaje tiene una ficha con identidad, evidencia, conexiones y efectos visuales propios. Algunos expedientes incluyen interacciones especiales que alteran la hoja, activan sonido o revelan pistas forenses.
 
+El archivo reúne **61 expedientes**. Masky y Hoodie tienen fichas individuales; Slender Doll y Nightmare Ally comparten una sola identidad. Los nuevos perfiles están en `src/app/data/extended-characters.data.ts`, con referencias visibles y notas que distinguen relatos, series, rediseños y versiones de fans. Candy Cane usa una historia que la fuente identifica expresamente como inventada por un fan; Nemesis corresponde a **The Reaper Nemesis**. Las evidencias escénicas no forman parte de los relatos originales.
+
+Las firmas visuales incluyen pinceladas de Bloody Painter, relojes de Clockwork, hilos de The Puppeteer, pétalos de Offenderman, cascabeles y dulces, suturas, vigilancia y apariciones espectrales. Se activan al explorar una tarjeta o abrir un expediente y respetan la preferencia de movimiento reducido. Las ilustraciones SVG son locales y solo se admiten desde el catálogo interno.
+
 ## Rituales y espejo con cámara
 
 Los ocho rituales tienen escenas diferenciadas: espejo de azogue, tablero Ouija, lápices cruzados, vela, ascensor, cinta VHS, ventana de las tres y receptor EVP. El tablero deletrea su respuesta; el ascensor revela una presencia; el tracking VHS permite recuperar la señal.
@@ -57,9 +61,10 @@ El progreso de un ritual se guarda al ejecutarlo, no al seleccionarlo.
 
 ## La Casa del Azogue — juego 3D
 
-La historia empieza con un prólogo de tres fragmentos, que se puede avanzar o saltar. Explora una casa de habitaciones y pasillos conectados, con madera deteriorada, humedad, mobiliario, sangre, iluminación cálida y niebla. Recupera **la llave y las dos pruebas**, y alcanza la puerta de salida.
+La historia empieza con un prólogo de cuatro fragmentos, que se puede avanzar o saltar. Explora una casa de habitaciones y pasillos conectados, con madera deteriorada, humedad, mobiliario, sangre, iluminación cálida y niebla. Recupera **la llave y las dos pruebas**, y alcanza la puerta de salida.
 
 - **Jeff the Killer:** perseguidor con navegación por las habitaciones, sonrisa y cuchillo. Iluminarlo de frente durante 1,5 segundos lo detiene temporalmente.
+- **Bloody Painter:** modelo de chaqueta azul y máscara blanca, lienzos con sonrisas rojas y patrulla independiente. Comienza a moverse después de 12 segundos; iluminarlo de frente durante 1,2 segundos lo detiene durante 3,5 segundos. La derrota identifica al perseguidor que te atrapó. Ambos dejan rastros en el suelo.
 - **Slender Man:** figura sin rostro que cambia de ubicación y desaparece periódicamente.
 - **Smile Dog:** presencia física en una habitación y efecto psicológico al mirarlo de cerca.
 - **Sonic.exe:** televisor maldito y aparición 3D durante la partida.
@@ -71,10 +76,11 @@ Son modelos estilizados creados con geometría y texturas procedurales, sin recu
 - **Computadora:** WASD para avanzar, retroceder y desplazarse lateralmente; ratón para mirar en ambos ejes. Haz clic en la escena para capturar el ratón; Escape libera la captura y pausa.
 - **Alternativa de teclado:** flechas izquierda/derecha para girar, Page Up / Page Down para mirar arriba/abajo; Q/E para desplazamiento lateral.
 - **Celular:** cruceta táctil para movimiento y arrastre sobre la escena para mirar. Ambas acciones se pueden realizar simultáneamente.
-- **Pausa:** ajustar sensibilidad, consultar las pruebas y salir. Se activa al abandonar la sección o perder el foco de la ventana.
-- **Pantalla completa:** disponible desde el botón de la escena cuando el navegador lo admite.
+- **Pausa:** Escape o P; P también reanuda. Permite ajustar sensibilidad, consultar las pruebas y salir. Se activa al abandonar la sección o perder el foco de la ventana.
+- **Pantalla completa:** incluye la escena y el HUD; en móvil solicita orientación horizontal. Si el navegador no admite el bloqueo, muestra una indicación para girar el dispositivo.
+- **Pestaña independiente:** «Jugar en una nueva pestaña» abre `?play=1`, con decoración, sonido, pantalla completa y enlace de regreso al Archivo. La URL conserva el subdirectorio de GitHub Pages y puede recargarse directamente.
 
-Tres dificultades cambian la velocidad de Jeff y el consumo de batería. Los récords se guardan por dificultad. Three.js se carga de forma diferida, la resolución se limita a 1,5× y la animación de luces se reduce si el sistema solicita menos movimiento. El navegador necesita WebGL y aceleración gráfica.
+Tres dificultades cambian la velocidad de los perseguidores y el consumo de batería. Los récords se guardan por dificultad. Three.js se carga de forma diferida, las paredes se dibujan mediante instancias y las rutas se reutilizan. La resolución se limita a 1,5× y baja a 1× si se detectan fotogramas lentos. El renderizado se detiene al pausar y la animación se reduce si el sistema solicita menos movimiento. El navegador necesita WebGL y aceleración gráfica.
 
 ## Verificación y publicación
 

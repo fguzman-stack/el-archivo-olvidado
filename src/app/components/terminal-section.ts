@@ -12,7 +12,7 @@ import {MazeGame} from './maze-game';
           <h2>CORREDOR 13</h2>
           <p>No estás viendo una grabación. Estás dentro.</p>
         </div>
-        <span class="game-controls">WASD caminar · ratón / arrastre mirar · Esc pausa<br>Recupera las pruebas y encuentra la salida.</span>
+        <div class="game-controls"><span>WASD caminar · ratón / arrastre mirar · Esc pausa<br>Recupera las pruebas y encuentra la salida.</span><a class="new-tab-game" [href]="gameUrl" target="_blank" rel="noopener">Jugar en una nueva pestaña ↗</a></div>
       </header>
       <main class="game-stage">
         @defer (on viewport) { <app-maze-game /> }
@@ -21,4 +21,6 @@ import {MazeGame} from './maze-game';
     </section>
   `,
 })
-export class TerminalSection {}
+export class TerminalSection {
+  readonly gameUrl = (() => { const url = new URL(window.location.href); url.searchParams.set('play', '1'); url.hash = ''; return url.href; })();
+}

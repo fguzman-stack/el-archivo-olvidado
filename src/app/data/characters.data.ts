@@ -1,4 +1,13 @@
+import {ADDITIONAL_CHARACTERS, CHARACTER_SIGNATURES} from './extended-characters.data';
+
 export type CharacterCategory = 'internet' | 'games' | 'liminal' | 'latin';
+
+export interface CharacterSignature {
+  kind: 'paint' | 'clock' | 'threads' | 'petals' | 'candy' | 'eyes' | 'stitches' | 'specter' | 'static' | 'blood' | 'blades';
+  symbol: string;
+  label: string;
+  color: string;
+}
 
 export interface CharacterTheme {
   scene: 'forest' | 'backrooms' | 'river' | 'red_room' | 'submerged' | 'corrupt' | 'rural_road' | 'block_mist' | 'void' | 'asylum' | 'carnival' | 'television' | 'crypt' | 'mountain';
@@ -34,6 +43,9 @@ export interface Character {
   silhouetteSvg: string;
   theme: CharacterTheme;
   artifact: DossierArtifact;
+  sources?: {label: string; url: string}[];
+  versionNote?: string;
+  signature?: CharacterSignature;
 }
 
 export const CATEGORY_COLORS: Record<CharacterCategory, { name: string; hex: string; desc: string }> = {
@@ -59,7 +71,7 @@ export const CATEGORY_COLORS: Record<CharacterCategory, { name: string; hex: str
   }
 };
 
-export const CHARACTERS: Character[] = [
+const BASE_CHARACTERS: Character[] = [
   // ─── 1. INTERNET CLÁSICAS (12) ───
   {
     id: 'slender-man',
@@ -188,11 +200,12 @@ export const CHARACTERS: Character[] = [
   {
     id: 'eyeless-jack',
     name: 'Eyeless Jack',
-    alias: 'Jack Nichols',
+    alias: 'El visitante de la máscara azul',
     category: 'internet',
     year: '2012',
-    origin: 'Creepypasta Wiki (Papa Gorgio)',
-    summary: 'Figura encapuchada que oculta sus cuencas oculares vacías tras una máscara de un azul cobalto corroído de la que supura una brea viscosa negra. Tras perder la visión en la Primera Guerra Mundial por gas mostaza, deambula silenciosamente por dormitorios extrayendo con destreza quirúrgica los riñones de sus durmientes para ingerirlos aún tibios.',
+    origin: 'Relato de Azelf5000 (2012), inspirado en una fotografía de 2009',
+    summary: 'En el relato original, Mitch descubre que le falta un riñón después de mudarse con su hermano Edwin. Una noche sorprende junto a su cama a una figura con sudadera negra y máscara azul, sin ojos, nariz ni boca visibles. Un líquido negro gotea desde sus cuencas vacías. La historia no establece un nombre humano ni un origen militar para la criatura; esas biografías pertenecen a versiones posteriores de fans.',
+    sources: [{label: 'Eyeless Jack · relato y origen de la imagen', url: 'https://www.creepypasta.com/eyeless-jack/'}],
     threatLevel: 4,
     proximitySign: 'Líquido alquitranado goteando del techo sobre las sábanas y una incisión limpia de 5 cm en el flanco lumbar.',
     disturbingNote: 'Se encontró la máscara abandonada; el fluido negro derritió la superficie plástica de la bolsa de pruebas.',
@@ -320,7 +333,7 @@ export const CHARACTERS: Character[] = [
     threatLevel: 5,
     proximitySign: 'Respiración sibilante entrecortada al borde del colchón y calor corporal abrasador en la oscuridad.',
     disturbingNote: 'La entrada en el diario de 1964 finaliza con una sola línea: "He visto sus ojos. Me prometió que regresaría cuando apague la vela."',
-    connectedIds: ['slender-man', 'the-chupacabras'],
+    connectedIds: ['slender-man', 'el-chupacabras'],
     silhouetteSvg: '<ellipse cx="50" cy="55" rx="28" ry="16" fill="currentColor"/><circle cx="28" cy="40" r="10" fill="currentColor"/><circle cx="26" cy="38" r="2" fill="#d9a441"/><path d="M40 68 L32 94 L22 94 M60 68 L68 94 L78 94 M22 46 L14 74 L8 88" stroke="currentColor" stroke-width="3" fill="none"/>',
     theme: {
       scene: 'void',
@@ -1122,3 +1135,10 @@ export const CHARACTERS: Character[] = [
     }
   }
 ];
+
+export const CHARACTERS: Character[] = [...BASE_CHARACTERS.filter(c => c.id !== 'masky-hoodie'), ...ADDITIONAL_CHARACTERS].map(character => ({
+  ...character,
+  connectedIds: character.connectedIds.flatMap(id => id === 'masky-hoodie' ? ['masky', 'hoodie'] : [id]),
+  signature: character.signature ?? CHARACTER_SIGNATURES[character.id],
+  sources: character.sources ?? (CHARACTER_SIGNATURES[character.id] ? [{label: 'Referencia del personaje · versiones del fandom', url: character.id === 'ticci-toby' ? 'https://ficcion-sin-limites.fandom.com/es/wiki/Ticci_Toby' : `https://creepypastafiles.fandom.com/wiki/${encodeURIComponent(({ 'slender-man': 'Slender Man', 'ben-drowned': 'BEN Drowned' } as Record<string, string>)[character.id] ?? character.name).replaceAll('%20', '_')}`}]: undefined),
+}));

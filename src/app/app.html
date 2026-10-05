@@ -1,0 +1,107 @@
+<!-- Main Viewport Shell -->
+<div class="relative w-screen h-screen overflow-hidden bg-[#0a0908] text-[#cfc7b5]">
+
+  <!-- DYNAMIC BACKGROUND ATMOSPHERE SCENE (Driven by ThemeController) -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-opacity duration-700 ease-in-out">
+    @let t = theme.activeTheme();
+
+    <!-- Forest Scene: Gnarled trees silhouette and misty depth -->
+    @if (t.scene === 'forest') {
+      <div class="absolute inset-0 bg-[#070908] opacity-60">
+        <svg class="w-full h-full object-cover opacity-25" viewBox="0 0 1000 600" preserveAspectRatio="none">
+          <path d="M120,600 L125,200 L115,100 L135,200 L140,600 Z M380,600 L385,150 L375,50 L395,150 L400,600 Z M650,600 L655,220 L645,80 L665,220 L670,600 Z M880,600 L885,180 L875,60 L895,180 L900,600 Z" fill="#cfc7b5" />
+          <path d="M50,600 L55,280 L48,160 L62,280 L66,600 Z M240,600 L245,260 L238,140 L252,260 L256,600 Z M520,600 L525,290 L518,170 L532,290 L536,600 Z M780,600 L785,270 L778,150 L792,270 L796,600 Z" fill="#cfc7b5" opacity="0.5" />
+        </svg>
+      </div>
+    }
+
+    <!-- Backrooms Scene: Repetitive yellow grid perspective lines -->
+    @if (t.scene === 'backrooms') {
+      <div class="absolute inset-0 opacity-40" style="background: radial-gradient(circle at center, #d9a441 0%, #2b1f0d 60%, #0a0908 100%);">
+        <svg class="w-full h-full opacity-20" viewBox="0 0 800 600" preserveAspectRatio="none">
+          <line x1="0" y1="0" x2="400" y2="300" stroke="#d9a441" stroke-width="1.5" />
+          <line x1="800" y1="0" x2="400" y2="300" stroke="#d9a441" stroke-width="1.5" />
+          <line x1="0" y1="600" x2="400" y2="300" stroke="#d9a441" stroke-width="1.5" />
+          <line x1="800" y1="600" x2="400" y2="300" stroke="#d9a441" stroke-width="1.5" />
+          <rect x="350" y="260" width="100" height="80" fill="none" stroke="#d9a441" stroke-width="1.5" />
+        </svg>
+      </div>
+    }
+
+    <!-- River Scene: Water ripples and cold mist -->
+    @if (t.scene === 'river') {
+      <div class="absolute inset-0 bg-[#060c12] opacity-50">
+        <div class="absolute inset-0" style="background: radial-gradient(ellipse at bottom, rgba(50, 90, 130, 0.25) 0%, transparent 70%);"></div>
+      </div>
+    }
+
+    <!-- Red Room Scene: Crimson shadows and blood walls -->
+    @if (t.scene === 'red_room') {
+      <div class="absolute inset-0" style="background: radial-gradient(circle at center, rgba(160, 26, 20, 0.25) 0%, rgba(60, 10, 8, 0.6) 50%, #0a0908 100%);"></div>
+    }
+
+    <!-- Corrupt / Glitch Scene: Fractured digital void -->
+    @if (t.scene === 'corrupt') {
+      <div class="absolute inset-0 bg-[#12080a] opacity-70">
+        <div class="absolute inset-0" style="background-image: repeating-linear-gradient(0deg, rgba(160, 26, 20, 0.08) 0px, rgba(160, 26, 20, 0.08) 2px, transparent 2px, transparent 6px);"></div>
+      </div>
+    }
+
+    <!-- Rural Road Scene: Dusty night path -->
+    @if (t.scene === 'rural_road') {
+      <div class="absolute inset-0 bg-[#0e0c0a] opacity-50">
+        <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(217, 164, 65, 0.12) 0%, transparent 60%);"></div>
+      </div>
+    }
+  </div>
+
+  <!-- 3 SNAP SECTIONS SCROLL CONTAINER -->
+  <div #scrollContainer class="horror-scroll-container relative z-10">
+    <!-- SECTION 1: INFORMACIÓN (Archivo de Personajes) -->
+    <app-archive-section />
+
+    <!-- SECTION 2: RITUALES (Altar y Grimorio) -->
+    <app-rituals-section />
+
+    <!-- SECTION 3: EL JUEGO (Terminal CRT y Laberinto) -->
+    <app-terminal-section />
+  </div>
+
+  <!-- FLASHLIGHT LIGHT BEAM OVERLAY -->
+  <div
+    class="flashlight-mask fixed inset-0 z-35 pointer-events-none"
+    [class.reading-mode]="effects.readingMode()"
+    aria-hidden="true"
+  ></div>
+
+  <!-- 3-DOTS MACABRE SIDEBAR NAVIGATION (Top: Archivo, Mid: Rituales, Bottom: Terminal) -->
+  <app-side-dots-nav
+    [activeSection]="activeSection()"
+    (navigate)="scrollToSection($event)"
+  />
+
+  <!-- VINTAGE FILM OVERLAY (Noise, Scratches, Projector Flicker, Cigarette Burn) -->
+  <app-film-overlay />
+
+  <!-- VIDEO GLITCH LAYER (RGB Split, Tracking Scanlines) -->
+  <app-glitch-layer />
+
+  <!-- SUBLIMINAL "IT'S ME" SYSTEM (Smooth 300ms fade, safe, non-strobe) -->
+  <app-subliminal-flash />
+
+  <!-- DYNAMIC SANITY SYSTEM HUD (Biometric sanity meter, status & calm down) -->
+  <app-sanity-hud />
+
+  <!-- HALLUCINATIONS LAYER (Claws peeking, fleeting shadows, ghost faces, blood melt) -->
+  <app-hallucination-overlay />
+
+  <!-- CASE FILE FULL-SCREEN DOSSIER MODAL -->
+  <app-case-file />
+
+  <!-- INITIAL CONSENT & REDUCED EFFECTS WARNING MODAL -->
+  <app-warning-dialog />
+
+  <!-- DISCREET BOTTOM-LEFT CONTROLS (Knob for FX, Reading mode, Audio) -->
+  <app-controls-bar />
+
+</div>

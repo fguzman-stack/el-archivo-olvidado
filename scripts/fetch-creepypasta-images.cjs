@@ -150,7 +150,6 @@ const SEARCH_QUERIES = {
   'el-cuco': ['El Coco folklore', 'Coco folklore'],
   'la-pincoya': ['Pincoya', 'La Pincoya'],
   'el-trauco': ['Trauco', 'El Trauco'],
-  'la-mano-peluda': ['La Mano Peluda', 'Mano Peluda'],
   'el-cadejo': ['Cadejo', 'El Cadejo'],
   'la-tunda': ['La Tunda', 'Tunda folklore'],
   'el-pombero': ['Pombero', 'El Pombero'],

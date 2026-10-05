@@ -740,7 +740,7 @@ const BASE_CHARACTERS: Character[] = [
     threatLevel: 4,
     proximitySign: 'Sonido de aplausos desacompasados bajo el asfalto y vibración de los tubos de agua potable.',
     disturbingNote: 'Se hallaron huellas de palmas humanas en el techo del túnel a cuatro metros de altura sin andamios.',
-    connectedIds: ['la-mano-peluda', 'the-rake'],
+    connectedIds: ['el-cuco', 'the-rake'],
     silhouetteSvg: '<ellipse cx="50" cy="32" rx="10" ry="14" fill="currentColor"/><line x1="50" y1="46" x2="50" y2="85" stroke="currentColor" stroke-width="4"/><path d="M50 52 L30 45 M50 58 L25 55 M50 64 L22 66 M50 52 L70 45 M50 58 L75 55 M50 64 L78 66" stroke="currentColor" stroke-width="2.5"/><circle cx="20" cy="66" r="3" fill="#cfc7b5"/><circle cx="80" cy="66" r="3" fill="#cfc7b5"/>',
     theme: {
       scene: 'void',
@@ -977,37 +977,6 @@ const BASE_CHARACTERS: Character[] = [
       paperStyle: 'mold',
       tag: 'PIEDRA VOLCÁNICA / RESINA HIPNÓTICA',
       samplePhrase: '«EL GOLPE SECO EN EL ÁRBOL... Y EL SUEÑO ETERNO»'
-    }
-  },
-  {
-    id: 'la-mano-peluda',
-    name: 'La Mano Peluda',
-    alias: 'La Garra del Sepulcro',
-    category: 'latin',
-    year: 'Siglo XVI',
-    origin: 'Puebla, México / Tradición Novohispana',
-    summary: 'Extremidad mutilada de un usurero avaro que murió sin reconciliarse con la Iglesia. Tras ser sepultado en tierra no consagrada, la mano emergió del fango adquiriendo vida propia. Cubierta por una gruesa capa de cerdas negras y uñas filosas como garfios de carnicero, repta por las vigas del techo para asfixiar a los que acumulan riquezas deshonestas.',
-    threatLevel: 3,
-    proximitySign: 'Rascado continuo en el reverso de la puerta y un rastro de tierra de panteón fresca en el tapete.',
-    disturbingNote: 'Los empleados de la morgue encontraron cinco marcas de quemadura negra con forma de dedos en el cuello.',
-    connectedIds: ['mr-hands', 'el-cuco'],
-    silhouetteSvg: '<ellipse cx="50" cy="65" rx="18" ry="12" fill="currentColor"/><line x1="38" y1="65" x2="32" y2="35" stroke="currentColor" stroke-width="4"/><line x1="44" y1="65" x2="42" y2="28" stroke="currentColor" stroke-width="4"/><line x1="50" y1="65" x2="50" y2="25" stroke="currentColor" stroke-width="4"/><line x1="56" y1="65" x2="58" y2="28" stroke="currentColor" stroke-width="4"/><line x1="62" y1="65" x2="68" y2="35" stroke="currentColor" stroke-width="4"/>',
-    theme: {
-      scene: 'crypt',
-      accentColor: '#cfc7b5',
-      particles: 'dust',
-      glitchLevel: 2,
-      fogDensity: 0.5,
-      flashlightColor: 'rgba(180, 170, 150, 0.22)',
-      droneFreq: 46
-    },
-    artifact: {
-      title: 'Mechón de Cerdas Negras de Cadáver Usurero',
-      badge: 'FIBRAS EPIDÉRMICAS DE PANTEÓN',
-      loreText: 'Fibras queratínicas gruesas adheridas a un fragmento de papel sellado colonial de 1582. Las cerdas se retuercen en espiral cuando entra en contacto con metales preciosos o monedas de plata.',
-      paperStyle: 'scratches',
-      tag: 'CERDAS CADAVÉRICAS / TIERRA PANTEÓN',
-      samplePhrase: '«EL RASPADO EN EL TECHO... LOS CINCO DEDOS EN LA GARGANTA»'
     }
   },
   {

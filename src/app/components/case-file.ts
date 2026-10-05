@@ -779,7 +779,6 @@ export class CaseFile {
       case 'ticci-toby':
       case 'laughing-jack':
       case 'el-cuco':
-      case 'la-mano-peluda':
       case 'siren-head':
         return 'claws';
       case 'eyeless-jack':

@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
+import {AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, ViewChild, inject, signal} from '@angular/core';
 import {RITUALS} from '../data/rituals.data';
 import {AudioEngine} from '../services/audio-engine';
 import {EffectsController} from '../services/effects';
@@ -11,6 +11,7 @@ import {MatIconModule} from '@angular/material/icon';
   selector: 'app-rituals-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BloodDrip, MatIconModule],
+  styleUrl: './rituals-section.css',
   template: `
     <section
       id="rituales"
@@ -54,6 +55,7 @@ import {MatIconModule} from '@angular/material/icon';
               <button
                 type="button"
                 (click)="selectRitual(idx)"
+                [attr.aria-pressed]="activeRitualIndex() === idx"
                 [class.bg-[#7a1f1a]]="activeRitualIndex() === idx"
                 [class.text-white]="activeRitualIndex() === idx"
                 [class.bg-black/10]="activeRitualIndex() !== idx"
@@ -110,19 +112,26 @@ import {MatIconModule} from '@angular/material/icon';
             </div>
 
             <!-- Right Side: Dedicated Interactive Simulator per Ritual -->
-            <div class="md:col-span-6 bg-[#0f0c0a] p-2.5 sm:p-4 md:p-6 rounded-xs border-2 border-[#2b1f1a] text-[#cfc7b5] min-h-[220px] sm:min-h-[300px] flex flex-col justify-center shadow-inner relative overflow-hidden">
+            <div class="ritual-stage md:col-span-6 bg-[#0f0c0a] p-2.5 sm:p-4 md:p-6 rounded-xs border-2 border-[#2b1f1a] text-[#cfc7b5] min-h-[220px] sm:min-h-[300px] flex flex-col justify-center shadow-inner relative overflow-hidden" [attr.data-ritual]="current.type">
+              <div class="stage-caption">EXPERIMENTO {{ activeRitualIndex() + 1 }} / {{ current.subtitle }}</div>
               
               <!-- 1. BLOODY MARY: Hold 10s on Mirror -->
               @if (current.type === 'bloody_mary') {
                 <div class="text-center space-y-2.5 sm:space-y-3">
-                  <div
-                    (mousedown)="startMirrorHold()"
-                    (mouseup)="stopMirrorHold()"
-                    (mouseleave)="stopMirrorHold()"
-                    (touchstart)="startMirrorHold()"
-                    (touchend)="stopMirrorHold()"
-                    class="w-36 h-48 sm:w-44 sm:h-56 mx-auto rounded-t-full border-4 border-[#3d2f28] bg-gradient-to-b from-[#1c1815] to-[#0a0908] flex items-center justify-center relative overflow-hidden cursor-pointer select-none group shadow-2xl"
+                  <button type="button" aria-label="Mantener el ritual del espejo durante diez segundos"
+                    (pointerdown)="holdMirror($event)"
+                    (pointerup)="stopMirrorHold()"
+                    (pointercancel)="stopMirrorHold()"
+                    (keydown.space)="startMirrorHold(); $event.preventDefault()"
+                    (keyup.space)="stopMirrorHold()"
+                    (blur)="stopMirrorHold()"
+                    class="mirror-surface w-36 h-48 sm:w-44 sm:h-56 mx-auto rounded-t-full border-4 border-[#3d2f28] bg-gradient-to-b from-[#1c1815] to-[#0a0908] flex items-center justify-center relative overflow-hidden cursor-pointer select-none group shadow-2xl"
                   >
+                    <video #mirrorVideo autoplay muted playsinline class="mirror-video" [class.corrupted]="mirrorProgress() > 50" [hidden]="!cameraActive()"></video>
+                    <div class="mirror-fog" [style.opacity]="mirrorProgress() / 150"></div>
+                    @if (mirrorProgress() > 65 || mirrorComplete()) {
+                      <div class="mary-apparition" [class.revealed]="mirrorComplete()"><i></i><i></i><span></span></div>
+                    }
                     <!-- Mirror surface distortion -->
                     <div
                       class="absolute inset-0 transition-opacity duration-300 pointer-events-none"
@@ -152,7 +161,12 @@ import {MatIconModule} from '@angular/material/icon';
                         }
                       </div>
                     }
+                  </button>
+                  <div class="camera-actions">
+                    <button type="button" (click)="cameraActive() ? stopCamera() : enableCamera()" [disabled]="cameraPending()">{{ cameraPending() ? 'Solicitando permiso…' : cameraActive() ? 'Apagar cámara' : 'Activar cámara frontal' }}</button>
+                    <button type="button" (click)="resetMirror()">Repetir ritual</button>
                   </div>
+                  <p class="camera-note" aria-live="polite">{{ cameraMessage() }}</p>
                   <span class="font-special text-xs text-[#cfc7b5]/60 block">
                     {{ mirrorComplete() ? 'La presencia ha respondido.' : 'Mantén pulsado sin parpadear.' }}
                   </span>
@@ -162,17 +176,17 @@ import {MatIconModule} from '@angular/material/icon';
               <!-- 2. OUIJA: Spirit Board Question -->
               @if (current.type === 'ouija') {
                 <div class="space-y-4">
-                  <div class="bg-[#1a1412] p-4 border border-[#3d2f28] rounded-xs text-center relative overflow-hidden">
+                  <div class="spirit-board bg-[#1a1412] p-4 border border-[#3d2f28] rounded-xs text-center relative overflow-hidden">
                     <div class="font-fell-sc text-lg text-[#d9a441] tracking-widest mb-1">
                       YES · OUIJA · NO
                     </div>
                     <div class="font-fell text-xs text-[#cfc7b5]/60 tracking-widest mb-3">
-                      A B C D E F G H I J K L M N Ñ O P Q R S T U V W X Y Z
+                      @for (letter of alphabet; track letter) { <span class="board-letter" [attr.data-letter]="letter">{{ letter }}</span> }
                     </div>
 
                     <!-- Planchette / Pointer animation -->
                     <div
-                      class="w-12 h-14 mx-auto border-2 border-[#d9a441] rounded-t-full rounded-b-xs flex items-center justify-center bg-black/80 shadow-lg transition-transform duration-500"
+                      class="planchette w-12 h-14 mx-auto border-2 border-[#d9a441] rounded-t-full rounded-b-xs flex items-center justify-center bg-black/80 shadow-lg transition-transform duration-500"
                       [style.transform]="ouijaTransform()"
                     >
                       <div class="w-3 h-3 rounded-full border border-[#d9a441]"></div>
@@ -189,16 +203,20 @@ import {MatIconModule} from '@angular/material/icon';
                       [value]="ouijaQuestion()"
                       (input)="onOuijaInput($event)"
                       placeholder="Escribe tu pregunta..."
+                      aria-label="Pregunta para la Ouija"
                       class="flex-1 bg-black/60 border border-[#3d2f28] px-3 py-1.5 font-special text-xs text-[#cfc7b5] outline-none focus:border-[#7a1f1a]"
                     />
                     <button
                       type="button"
                       (click)="askOuija()"
+                      [disabled]="ouijaBusy()"
+                      aria-label="Consultar el tablero Ouija"
                       class="px-4 py-1.5 bg-[#7a1f1a] hover:bg-[#a01a14] text-white font-special text-xs uppercase cursor-pointer transition-colors"
                     >
                       Preguntar
                     </button>
                   </div>
+                  <button type="button" class="close-session" (click)="closeOuija()">ADIÓS · cerrar sesión</button>
                 </div>
               }
 
@@ -261,6 +279,7 @@ import {MatIconModule} from '@angular/material/icon';
                       [value]="candleName()"
                       (input)="onCandleNameInput($event)"
                       placeholder="Nombre del destinatario..."
+                      aria-label="Nombre para la vela"
                       class="flex-1 bg-black/60 border border-[#3d2f28] px-3 py-1.5 font-special text-xs text-[#cfc7b5] outline-none"
                     />
                     <button
@@ -283,6 +302,7 @@ import {MatIconModule} from '@angular/material/icon';
               <!-- 5. EL ASCENSOR: Floor Button Sequence -->
               @if (current.type === 'elevator') {
                 <div class="space-y-4 text-center">
+                  <div class="elevator-doors" [class.open]="elevatorStep() === 6"><div></div><div></div><span class="door-presence"></span></div>
                   <div class="font-special text-xs text-[#cfc7b5]/70">
                     Secuencia requerida: 4 · 2 · 6 · 2 · 10 · 5
                   </div>
@@ -327,6 +347,7 @@ import {MatIconModule} from '@angular/material/icon';
                   </div>
 
                   <div class="my-3 text-xs md:text-sm text-zinc-300 space-y-1">
+                    <div class="tape-hall" [class.playing]="vhsPlaying()"><span></span></div>
                     <p class="text-emerald-400 font-mono text-[11px]">// SEÑAL DE CINTA ANÁLOGA DETECTADA</p>
                     <p>{{ vhsTranscript() }}</p>
                   </div>
@@ -342,12 +363,14 @@ import {MatIconModule} from '@angular/material/icon';
                     </button>
                     <span class="text-[11px] text-zinc-500">Cabezal sucio</span>
                   </div>
+                  <label class="tracking-label">TRACKING <input type="range" min="0" max="100" [value]="vhsTracking()" (input)="adjustTracking($event)" aria-label="Ajustar tracking de la cinta" /></label>
                 </div>
               }
 
               <!-- 7. LA VENTANA DE LAS 3:00 AM -->
               @if (current.type === 'window_3am') {
                 <div class="space-y-4 text-center">
+                  <div class="haunted-window" [class.revealed]="windowRevealed()"><div class="rain"></div><span class="window-figure"></span><i></i></div>
                   <div class="w-40 h-40 mx-auto rounded-full border-4 border-[#3d2f28] bg-[#0a0908] flex items-center justify-center p-3 relative shadow-inner">
                     <mat-icon class="text-4xl text-[#7a1f1a]">access_time</mat-icon>
                     <div class="absolute bottom-4 font-special text-xs text-[#cfc7b5]">
@@ -374,6 +397,7 @@ import {MatIconModule} from '@angular/material/icon';
               <!-- 8. EL SUSURRO EVP -->
               @if (current.type === 'whisper') {
                 <div class="space-y-4 text-center">
+                  <div class="evp-wave" [class.listening]="isListeningWhisper()">@for (bar of waveform; track $index) { <i [style.height.px]="bar" [style.animation-delay.ms]="$index * 70"></i> }</div>
                   <div class="w-32 h-32 mx-auto rounded-full border-2 border-[#7a1f1a] bg-black/60 flex items-center justify-center relative overflow-hidden">
                     <mat-icon
                       class="text-4xl transition-all duration-300"
@@ -431,11 +455,118 @@ import {MatIconModule} from '@angular/material/icon';
     </section>
   `,
 })
-export class RitualsSection {
+export class RitualsSection implements AfterViewInit, OnDestroy {
   private audio = inject(AudioEngine);
   private effects = inject(EffectsController);
   private progress = inject(ProgressTracker);
   private sanity = inject(SanityController);
+  @ViewChild('mirrorVideo') mirrorVideo?: ElementRef<HTMLVideoElement>;
+  readonly alphabet = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+  readonly waveform = [8, 18, 30, 12, 45, 24, 58, 34, 15, 42, 22, 50, 18, 32, 10];
+  cameraActive = signal(false);
+  cameraPending = signal(false);
+  cameraMessage = signal('Cámara opcional. El reflejo se procesa aquí: no se graba ni se envía.');
+  ouijaBusy = signal(false);
+  vhsPlaying = signal(false);
+  vhsTracking = signal(10);
+  private stream: MediaStream | null = null;
+  private cameraRequest = 0;
+  private observer: IntersectionObserver | null = null;
+  private host: ElementRef<HTMLElement> = inject(ElementRef);
+  private timers = new Set<ReturnType<typeof setTimeout>>();
+  private ouijaTimer: ReturnType<typeof setInterval> | null = null;
+  private visibilityHandler = () => { if (document.hidden) { this.stopCamera(); this.stopMirrorHold(); } };
+
+  constructor() { document.addEventListener('visibilitychange', this.visibilityHandler); }
+
+  ngAfterViewInit(): void {
+    this.observer = new IntersectionObserver(entries => {
+      if (!entries[0].isIntersecting) { this.stopCamera(); this.stopMirrorHold(); this.clearTimers(); }
+    }, {threshold: .1});
+    this.observer.observe(this.host.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    this.stopCamera();
+    this.stopMirrorHold();
+    this.clearTimers();
+    this.observer?.disconnect();
+    document.removeEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  private later(callback: () => void, delay: number): void {
+    const timer = setTimeout(() => { this.timers.delete(timer); callback(); }, delay);
+    this.timers.add(timer);
+  }
+
+  private clearTimers(): void {
+    this.timers.forEach(timer => clearTimeout(timer));
+    this.timers.clear();
+    if (this.ouijaTimer) clearInterval(this.ouijaTimer);
+    this.ouijaTimer = null;
+    this.ouijaBusy.set(false);
+    this.isListeningWhisper.set(false);
+  }
+
+  async enableCamera(): Promise<void> {
+    if (this.cameraPending()) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.cameraMessage.set('Cámara no disponible. Abre la web mediante HTTPS o usa el espejo simulado.');
+      return;
+    }
+    const request = ++this.cameraRequest;
+    this.cameraPending.set(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'user', width: {ideal: 640}}, audio: false});
+      if (request !== this.cameraRequest || this.activeRitualIndex() !== 0 || document.hidden) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      this.stream = stream;
+      const video = this.mirrorVideo?.nativeElement;
+      if (!video) { this.stopCamera(); return; }
+      video.srcObject = stream;
+      await video.play();
+      if (request !== this.cameraRequest) return;
+      this.cameraActive.set(true);
+      this.cameraMessage.set('Reflejo local activo. Mantén pulsado el cristal durante diez segundos.');
+    } catch {
+      if (request === this.cameraRequest) {
+        this.stopCamera();
+        this.cameraMessage.set('No se pudo activar la cámara. Puedes continuar con el espejo simulado.');
+      }
+    } finally { if (request === this.cameraRequest) this.cameraPending.set(false); }
+  }
+
+  stopCamera(): void {
+    const wasActive = this.cameraActive() || this.cameraPending();
+    this.cameraRequest++;
+    this.stream?.getTracks().forEach(track => track.stop());
+    this.stream = null;
+    if (this.mirrorVideo) this.mirrorVideo.nativeElement.srcObject = null;
+    this.cameraActive.set(false);
+    this.cameraPending.set(false);
+    if (wasActive) this.cameraMessage.set('Cámara apagada. Puedes continuar con el espejo simulado.');
+  }
+
+  holdMirror(event: PointerEvent): void {
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    this.startMirrorHold();
+  }
+
+  resetMirror(): void { this.mirrorComplete.set(false); this.stopMirrorHold(); }
+  closeOuija(): void {
+    this.clearTimers(); this.ouijaSpelledText.set('ADIÓS. La sesión está cerrada.');
+    this.ouijaTransform.set('translate(0, 0)');
+  }
+  adjustTracking(event: Event): void {
+    this.vhsTracking.set(Number((event.target as HTMLInputElement).value));
+    if (this.vhsPlaying() && Math.abs(this.vhsTracking() - 50) < 12) {
+      this.vhsTranscript.set('SEÑAL RECUPERADA: «La casa del Corredor 13 no está vacía. No sigas las risas.»');
+      this.completeRitual();
+    }
+  }
+  private completeRitual(): void { this.progress.markRitualCompleted(this.rituals[this.activeRitualIndex()].id); }
 
   readonly rituals = RITUALS;
   activeRitualIndex = signal<number>(0);
@@ -478,9 +609,11 @@ export class RitualsSection {
   whisperSubtitle = signal<string>('');
 
   selectRitual(index: number): void {
+    this.stopMirrorHold();
+    this.stopCamera();
+    this.clearTimers();
     this.activeRitualIndex.set(index);
     this.audio.playTypewriterKey();
-    this.progress.markRitualCompleted(this.rituals[index].id);
   }
 
   nextRitual(): void {
@@ -495,7 +628,7 @@ export class RitualsSection {
 
   // 1. Mirror functions
   startMirrorHold(): void {
-    if (this.mirrorComplete()) return;
+    if (this.mirrorComplete() || this.isHoldingMirror()) return;
     this.isHoldingMirror.set(true);
     this.sanity.drainSanity(2, 'Mirando al espejo oscuro');
     this.mirrorTimer = setInterval(() => {
@@ -503,6 +636,7 @@ export class RitualsSection {
       if (next >= 100) {
         this.mirrorProgress.set(100);
         this.mirrorComplete.set(true);
+        this.completeRitual();
         this.isHoldingMirror.set(false);
         if (this.mirrorTimer) clearInterval(this.mirrorTimer);
         this.audio.playStaticGlitch(0.3);
@@ -515,10 +649,10 @@ export class RitualsSection {
   }
 
   stopMirrorHold(): void {
-    if (this.mirrorComplete()) return;
     this.isHoldingMirror.set(false);
-    this.mirrorProgress.set(0);
+    if (!this.mirrorComplete()) this.mirrorProgress.set(0);
     if (this.mirrorTimer) clearInterval(this.mirrorTimer);
+    this.mirrorTimer = null;
   }
 
   // 2. Ouija functions
@@ -528,38 +662,35 @@ export class RitualsSection {
 
   askOuija(): void {
     const q = this.ouijaQuestion().trim();
-    if (!q) return;
+    if (!q || this.ouijaBusy()) return;
+    this.ouijaBusy.set(true);
 
     this.audio.playFootstep();
     this.ouijaSpelledText.set('La planchette se desliza...');
     this.sanity.drainSanity(4.5, 'Consulta a la Ouija');
 
-    // Animate planchette movement
-    const randomOffsets = [
-      'translate(-25px, -15px)',
-      'translate(30px, -20px)',
-      'translate(15px, 18px)',
-      'translate(-10px, 10px)',
-    ];
+    const answers = ['NO ESTAS SOLO', 'ESTAMOS AQUI', 'MIRA LA PUERTA', 'EL TIEMPO SE AGOTA', 'YA LO SABES'];
+    const chosen = answers[Math.floor(Math.random() * answers.length)];
     let step = 0;
     const interval = setInterval(() => {
-      this.ouijaTransform.set(randomOffsets[step % randomOffsets.length]);
-      step++;
-      if (step > 4) {
-        clearInterval(interval);
-        this.ouijaTransform.set('translate(0, 0)');
-        const answers = [
-          'NO DEBISTE PREGUNTAR ESO',
-          'ESTAMOS AQUÍ CONTIGO',
-          'MIRA DETRÁS DE LA PUERTA',
-          'EL TIEMPO SE AGOTA',
-          'YA SABES LA RESPUESTA',
-        ];
-        const chosen = answers[Math.floor(Math.random() * answers.length)];
-        this.ouijaSpelledText.set(chosen);
-        this.audio.playTypewriterKey();
+      const letter = chosen[step];
+      const board = this.host.nativeElement.querySelector<HTMLElement>('.spirit-board');
+      const tile = board?.querySelector<HTMLElement>(`[data-letter="${letter}"]`);
+      if (board && tile) {
+        const br = board.getBoundingClientRect(); const lr = tile.getBoundingClientRect();
+        this.ouijaTransform.set(`translate(${lr.left + lr.width / 2 - br.left - br.width / 2}px, ${lr.top + lr.height / 2 - br.top - br.height / 2}px)`);
       }
-    }, 400);
+      this.ouijaSpelledText.set(chosen.slice(0, step + 1));
+      if (letter !== ' ') this.audio.playTypewriterKey();
+      step++;
+      if (step >= chosen.length) {
+        clearInterval(interval);
+        this.ouijaBusy.set(false);
+        this.completeRitual();
+        this.ouijaSpelledText.set(chosen);
+      }
+    }, 280);
+    this.ouijaTimer = interval;
   }
 
   // 3. Charlie Charlie functions
@@ -570,7 +701,8 @@ export class RitualsSection {
     const randomAngle = Math.random() > 0.5 ? 90 + (Math.random() * 8 - 4) : 180 + (Math.random() * 8 - 4);
     this.charlieAngle.set(randomAngle);
 
-    setTimeout(() => {
+    this.later(() => {
+      this.completeRitual();
       if (Math.abs(randomAngle - 90) < 10) {
         this.charlieResult.set('El lápiz apunta con firmeza hacia: SÍ.');
       } else {
@@ -592,7 +724,8 @@ export class RitualsSection {
     this.candleOmen.set('La mecha chisporrotea consumiendo la cera negra...');
     this.sanity.drainSanity(4.0, 'Vela del nombre');
 
-    setTimeout(() => {
+    this.later(() => {
+      this.completeRitual();
       const omens = [
         `Para ${name}: «La sombra que camina a tu lado no es tu reflejo.»`,
         `Para ${name}: «El reloj se detendrá antes del alba.»`,
@@ -606,6 +739,7 @@ export class RitualsSection {
 
   // 5. Elevator sequence functions
   pressElevatorFloor(floor: number): void {
+    if (this.elevatorStep() >= 6) return;
     this.audio.playElevatorBell();
     this.elevatorFloor.set(floor);
     this.sanity.drainSanity(2.0, 'Botón de ascensor maldito');
@@ -615,6 +749,7 @@ export class RitualsSection {
       const nextStep = step + 1;
       this.elevatorStep.set(nextStep);
       if (nextStep >= this.targetElevatorSeq.length) {
+        this.completeRitual();
         this.elevatorStatus.set('¡DIMENSIÓN CAMBIADA! NO MIRES A LA MUJER.');
         this.audio.playStaticGlitch(0.4);
         this.effects.triggerGlitch(4, 400);
@@ -637,6 +772,7 @@ export class RitualsSection {
 
   // 6. VHS functions
   playVhsTape(): void {
+    this.vhsPlaying.set(true);
     this.audio.playStaticGlitch(0.5);
     this.effects.triggerGlitch(3, 300);
     this.vhsTranscript.set('ESTÁTICA... // "Si estás viendo esto, ellos ya saben que encontraste el archivo."');
@@ -645,6 +781,7 @@ export class RitualsSection {
 
   // 7. Window 3AM functions
   advanceClockTo3Am(): void {
+    this.completeRitual();
     this.windowClockText.set('03:00 AM');
     this.audio.playElevatorBell();
     this.effects.triggerGlitch(2, 250);
@@ -654,12 +791,14 @@ export class RitualsSection {
 
   // 8. Whisper functions
   triggerWhisper(): void {
+    if (this.isListeningWhisper()) return;
     this.isListeningWhisper.set(true);
     this.audio.playWhisperMurmur();
     this.whisperSubtitle.set('Escuchando frecuencia EVP...');
     this.sanity.drainSanity(4.0, 'Sintonización EVP de susurros');
 
-    setTimeout(() => {
+    this.later(() => {
+      this.completeRitual();
       const phrases = [
         '«...estás buscando en el lugar equivocado...»',
         '«...la puerta del sótano nunca tuvo cerrojo...»',

@@ -1,0 +1,38 @@
+:host { display:block; height:100%; }
+.house-game { height:100%; display:flex; flex-direction:column; background:#050807; color:#dacfb9; font-family:monospace; }
+.transmission,.game-hud { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 14px; font-size:10px; letter-spacing:1px; color:#b5a48d; border-bottom:1px solid #493427; }
+.transmission > span:first-child { color:#cc6957; }
+.viewport { position:relative; flex:1; min-height:240px; overflow:hidden; }
+canvas { width:100%; height:100%; display:block; position:absolute; inset:0; touch-action:none; cursor:crosshair; }
+.view-grain { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse,transparent 40%,#000b),repeating-linear-gradient(0deg,transparent 0 3px,#0002 4px); }
+.crosshair { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:.6; pointer-events:none; }
+.objective { position:absolute; left:14px; top:12px; font-size:10px; color:#cfbf9d; pointer-events:none; }
+.encounter { position:absolute; bottom:24px; left:20%; right:20%; text-align:center; font:italic 15px/1.5 Georgia,serif; color:#e0d4c1; text-shadow:0 2px 6px #000; pointer-events:none; }
+.view-tools { position:absolute; right:10px; top:32px; display:flex; gap:5px; }
+button { cursor:pointer; border:1px solid #76503b; background:#201914e8; color:#dbc8a9; padding:9px 12px; font:11px monospace; }
+button:hover { background:#573024; }
+button:focus-visible,input:focus-visible { outline:2px solid #d9a441; outline-offset:3px; }
+button:disabled { opacity:.5; cursor:wait; }
+.game-dialog { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px; gap:15px; text-align:center; overflow:auto; background:radial-gradient(ellipse at 50% 65%,#25231bec,#050807f5 75%); }
+.chapter-label { color:#b18860; font-size:10px; letter-spacing:3px; }
+h3 { font:clamp(24px,4vw,48px)/1.1 'IM Fell English SC',Georgia,serif; letter-spacing:4px; color:#e2d6be; margin:0; }
+.game-dialog p { max-width:570px; color:#bdb5a5; font:15px/1.7 Georgia,serif; margin:0; }
+.game-dialog .narration { font-size:clamp(15px,1.7vw,21px); color:#ded2be; }
+.difficulty { display:flex; gap:6px; }
+.difficulty [aria-pressed="true"] { background:#7c3427; color:#fff; }
+.primary { padding:12px 24px; background:#743124; color:#fff0d4; letter-spacing:2px; box-shadow:0 5px 30px #0008; }
+.subtle { border:0; background:transparent; text-decoration:underline; color:#a99c85; }
+.game-dialog small { color:#8f8e7d; font-size:10px; line-height:1.8; }
+.game-dialog .error { color:#d98271; font:12px/1.5 monospace; }
+.game-dialog label { font-size:12px; display:flex; flex-direction:column; gap:12px; }
+input { accent-color:#b55f42; }
+.found-notes { max-height:130px; overflow:auto; max-width:550px; border-left:2px solid #805239; padding:8px 14px; text-align:left; }
+.found-notes h4 { font-size:10px; color:#b9946b; margin:0 0 8px; }
+.found-notes p { font-size:13px; }
+.game-hud { border-top:1px solid #493427; border-bottom:0; flex-wrap:wrap; }
+.game-hud span { display:flex; gap:6px; align-items:center; }
+meter { width:75px; height:10px; accent-color:#b68241; }
+.mobile-pad { display:none; }
+:fullscreen { background:#000; }
+@media(pointer:coarse) { .mobile-pad { display:grid; grid-template-columns:repeat(3,44px); gap:4px; position:absolute; left:14px; bottom:15px; } .mobile-pad button { padding:0; width:44px; height:44px; touch-action:none; background:#1b211cc9; } .mobile-pad button:first-child { grid-column:2; } .mobile-pad button:nth-child(2) { grid-column:1; grid-row:2; } .mobile-pad button:nth-child(3) { grid-column:2; grid-row:2; } .mobile-pad button:nth-child(4) { grid-column:3; grid-row:2; } .encounter { left:45%; right:10px; font-size:12px; } }
+@media(max-width:640px) { .game-dialog { padding:16px; gap:12px; } .game-dialog h3 { font-size:26px; } .chapter-label { font-size:8px; } .transmission,.game-hud { padding:7px; font-size:8px; letter-spacing:0; } meter { width:40px; } .objective { font-size:8px; max-width:70%; } }

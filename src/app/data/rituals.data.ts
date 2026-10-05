@@ -55,7 +55,7 @@ export const RITUALS: Ritual[] = [
     type: 'name_candle',
     title: 'La Vela del Nombre',
     subtitle: 'El Ósculo de Cera y Sangre',
-    rule: 'Mantén pulsada la mecha para encender la llama de sebo, inscribe el nombre del destinatario y aguarda a que el calor revele el presagio.',
+    rule: 'Escribe el nombre del destinatario, pulsa Prender y aguarda a que el calor revele el presagio.',
     warning: 'Nunca apagues la llama con un soplido directo; ahógala con la palma de la mano o el fuego recordará tu rostro en tus pesadillas.',
     loreSnippet: 'El fuego de sebo negro consume la tinta antes de que se seque, dejando solo palabras condenadas.',
     icon: 'whatshot'
@@ -95,7 +95,7 @@ export const RITUALS: Ritual[] = [
     type: 'whisper',
     title: 'El Susurro de la Pared',
     subtitle: 'Frecuencia EVP Subatómica',
-    rule: 'Activa el receptor acústico y mantén el sensor de audio presionado para sintonizar los murmullos atrapados en las grietas del yeso.',
+    rule: 'Pulsa Escuchar la pared para activar el receptor acústico y sintonizar los murmullos atrapados en las grietas del yeso.',
     warning: 'Usa auriculares a volumen moderado. Si comienzas a escuchar tu propio nombre de pila deletreado en reversa, interrumpe la conexión.',
     loreSnippet: 'El yeso poroso absorbe las últimas palabras pronunciadas en habitaciones donde alguien dejó de respirar.',
     icon: 'hearing'

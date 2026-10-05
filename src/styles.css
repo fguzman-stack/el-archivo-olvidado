@@ -413,5 +413,6 @@
 .game-controls { font:11px/1.8 monospace; color:#c4baa9; }
 .game-stage { flex:1; min-height:0; width:100%; max-width:1440px; margin:auto; border:1px solid #48332a; box-shadow:0 24px 80px #000; }
 .game-stage app-maze-game { display:block; height:100%; }
+.game-placeholder { display:grid; place-items:center; height:100%; color:#b18860; font:12px monospace; background:#050807; }
 @media(max-width:640px) { .game-section { padding:66px 12px 90px; gap:12px; } .game-heading { flex-direction:column; align-items:flex-start; gap:6px; } .game-controls { font-size:9px; } .blood-corner { width:75px; height:100px; } }
 @media(prefers-reduced-motion:reduce) { .camera-interruption,.animate-dossier-blood-splash { animation:none; } }

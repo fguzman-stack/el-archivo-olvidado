@@ -12,9 +12,12 @@ import {MazeGame} from './maze-game';
           <h2>CORREDOR 13</h2>
           <p>No estás viendo una grabación. Estás dentro.</p>
         </div>
-        <span class="game-controls">W/S avanzar · A/D girar · Q/E lateral<br>Encuentra la llave y la puerta de salida.</span>
+        <span class="game-controls">WASD caminar · ratón / arrastre mirar · Esc pausa<br>Recupera las pruebas y encuentra la salida.</span>
       </header>
-      <main class="game-stage"><app-maze-game /></main>
+      <main class="game-stage">
+        @defer (on viewport) { <app-maze-game /> }
+        @placeholder { <div class="game-placeholder">TRANSMISIÓN 013 · Conectando con la casa…</div> }
+      </main>
     </section>
   `,
 })

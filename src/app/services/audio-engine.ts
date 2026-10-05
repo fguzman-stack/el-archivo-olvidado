@@ -782,6 +782,34 @@ export class AudioEngine {
     }
   }
 
+  /** Breath-like, pitched laughter with alternating stereo placement. */
+  playHorrorLaugh(): void {
+    if (!this.isEnabled()) return;
+    const ctx = this.initContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    for (let i = 0; i < 7; i++) {
+      const start = now + i * .21;
+      const voice = ctx.createOscillator();
+      const harmonic = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      const pan = ctx.createStereoPanner();
+      voice.type = 'sawtooth'; harmonic.type = 'triangle';
+      voice.frequency.setValueAtTime(145 + i * 9, start);
+      voice.frequency.exponentialRampToValueAtTime(85, start + .17);
+      harmonic.frequency.setValueAtTime(voice.frequency.value * 2.03, start);
+      filter.type = 'bandpass'; filter.frequency.value = 680; filter.Q.value = 3;
+      gain.gain.setValueAtTime(.001, start);
+      gain.gain.exponentialRampToValueAtTime(.10 * Math.max(.001, this.masterVolume()), start + .035);
+      gain.gain.exponentialRampToValueAtTime(.001, start + .19);
+      pan.pan.value = i % 2 ? -.65 : .65;
+      voice.connect(filter); harmonic.connect(filter); filter.connect(gain); gain.connect(pan); pan.connect(ctx.destination);
+      voice.start(start); harmonic.start(start); voice.stop(start + .2); harmonic.stop(start + .2);
+      harmonic.onended = () => { voice.disconnect(); harmonic.disconnect(); filter.disconnect(); gain.disconnect(); pan.disconnect(); };
+    }
+  }
+
   playFootstep(): void {
     if (!this.isEnabled()) return;
     const ctx = this.initContext();

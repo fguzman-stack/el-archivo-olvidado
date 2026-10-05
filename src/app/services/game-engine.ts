@@ -56,7 +56,9 @@ export class GameEngine {
   playerX = 48;
   playerY = 48;
   playerAngle = 0; // radians
-  playerSpeed = 1.6;
+  playerPitch = 0;
+  readonly encounter = signal('');
+  playerSpeed = .48;
 
   // Creature state
   creatureX = 0;
@@ -77,12 +79,17 @@ export class GameEngine {
 
   private timerInterval: ReturnType<typeof setInterval> | null = null;
   private lastStepTime = 0;
+  private paused = false;
+
+  pauseGame(): void { this.paused = true; }
+  resumeGame(): void { this.paused = false; }
 
   setDifficulty(diff: GameDifficulty): void {
     this.difficulty.set(diff);
   }
 
   startNewGame(): void {
+    this.paused = false;
     this.generateMaze();
     this.spawnEntities();
     this.battery.set(100);
@@ -90,6 +97,7 @@ export class GameEngine {
     this.hasKey.set(false);
     this.gameTime.set(0);
     this.loreFound.set([]);
+    this.encounter.set('Encuentra la cinta y la llave. La salida está al fondo de la casa.');
     this.creatureStateInternal = 'PATROL';
     this.creatureState.set('PATROL');
     this.creatureIlluminatedTimer = 0;
@@ -98,8 +106,15 @@ export class GameEngine {
 
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.timerInterval = setInterval(() => {
-      if (this.status() === 'PLAYING') {
+      if (this.status() === 'PLAYING' && !this.paused) {
         this.gameTime.update(t => t + 1);
+        if (this.gameTime() % 17 === 0) {
+          this.audio.playHorrorLaugh();
+          this.encounter.set('Jeff the Killer: «Ve a dormir». La risa viene de dentro de la casa.');
+        } else if (this.gameTime() % 11 === 0) {
+          this.audio.playWhisperMurmur();
+          this.encounter.set('Algo ha cambiado detrás de ti. No recuerdas haber abierto esa puerta.');
+        }
 
         // Battery drainage rate
         const drain = this.difficulty() === 'easy' ? 0.8 : this.difficulty() === 'normal' ? 1.2 : 1.8;
@@ -180,6 +195,15 @@ export class GameEngine {
         }
       }
     }
+    // Carve connected rooms into the generated house; corridors remain navigable.
+    for (const [rx, ry, width, height] of [[0, 0, 3, 3], [4, 1, 4, 3], [9, 3, 4, 3], [1, 6, 4, 3], [7, 7, 4, 3]]) {
+      for (let y = ry; y < ry + height; y++) {
+        for (let x = rx; x < rx + width; x++) {
+          if (x < rx + width - 1) this.removeWalls(this.grid[y][x], this.grid[y][x + 1]);
+          if (y < ry + height - 1) this.removeWalls(this.grid[y][x], this.grid[y + 1][x]);
+        }
+      }
+    }
   }
 
   private getUnvisitedNeighbors(cell: MazeCell): MazeCell[] {
@@ -216,6 +240,7 @@ export class GameEngine {
     this.playerX = this.cellSize * 0.5 + 4;
     this.playerY = this.cellSize * 0.5 + 4;
     this.playerAngle = 0;
+    this.playerPitch = 0;
 
     // Exit is at bottom-right
     this.exitX = (this.cols - 1) * this.cellSize + this.cellSize * 0.5;
@@ -229,7 +254,7 @@ export class GameEngine {
 
     // Adjust creature speed by difficulty
     const diff = this.difficulty();
-    this.creatureSpeed = diff === 'easy' ? 0.75 : diff === 'normal' ? 1.05 : 1.35;
+    this.creatureSpeed = diff === 'easy' ? .23 : diff === 'normal' ? .32 : .43;
 
     // Items
     this.items = [];
@@ -283,7 +308,7 @@ export class GameEngine {
 
   // Update physics and AI per frame
   update(delta: number, moveX: number, moveY: number, targetAngle: number): void {
-    if (this.status() !== 'PLAYING') return;
+    if (this.status() !== 'PLAYING' || this.paused) return;
 
     this.playerAngle = targetAngle;
 
@@ -315,12 +340,15 @@ export class GameEngine {
 
     // Check exit
     const distToExit = Math.hypot(this.playerX - this.exitX, this.playerY - this.exitY);
-    if (distToExit < 20 && this.hasKey()) {
+    if (distToExit < 20 && this.hasKey() && this.loreFound().length >= 2) {
       this.status.set('WON');
       if (this.timerInterval) clearInterval(this.timerInterval);
       this.progress.saveMazeScore(this.difficulty(), this.gameTime());
       this.audio.playElevatorBell();
       return;
+    }
+    if (distToExit < 20 && this.hasKey() && this.loreFound().length < 2) {
+      this.encounter.set('La cinta sigue incompleta. Recupera las dos pruebas antes de salir.');
     }
 
     // Creature AI update
@@ -387,12 +415,14 @@ export class GameEngine {
           item.collected = true;
           this.audio.playClick();
           if (item.type === 'key') {
+            this.encounter.set('Llave recuperada. La puerta del fondo ya puede abrirse.');
             this.hasKey.set(true);
             this.globalSanity.restoreSanity(15);
           } else if (item.type === 'battery') {
             this.battery.update(b => Math.min(100, b + 40));
             this.globalSanity.restoreSanity(10);
           } else if (item.type === 'lore' && item.loreSnippet) {
+            this.encounter.set(item.loreSnippet);
             this.loreFound.update(list => [...list, item.loreSnippet!]);
             this.globalSanity.restoreSanity(8);
           }
@@ -421,7 +451,7 @@ export class GameEngine {
     while (diffAngle > Math.PI) diffAngle -= Math.PI * 2;
 
     const flashlightRange = this.battery() > 25 ? 130 : 65;
-    const inFlashlightCone = Math.abs(diffAngle) < 0.45 && distToPlayer < flashlightRange && this.battery() > 0;
+    const inFlashlightCone = Math.abs(diffAngle) < 0.45 && Math.abs(this.playerPitch) < 0.35 && distToPlayer < flashlightRange && this.battery() > 0 && this.hasLineOfSight(this.creatureX, this.creatureY);
 
     if (inFlashlightCone) {
       this.creatureIlluminatedTimer += delta;
@@ -465,8 +495,12 @@ export class GameEngine {
 
     if (targetDist > 2) {
       const step = this.creatureSpeed * (delta * 60);
-      const moveX = (targetDx / targetDist) * step;
-      const moveY = (targetDy / targetDist) * step;
+      const waypoint = this.nextWaypoint(this.creatureTargetX, this.creatureTargetY);
+      const routeDx = waypoint.x - this.creatureX;
+      const routeDy = waypoint.y - this.creatureY;
+      const routeDist = Math.max(1, Math.hypot(routeDx, routeDy));
+      const moveX = (routeDx / routeDist) * Math.min(step, routeDist);
+      const moveY = (routeDy / routeDist) * Math.min(step, routeDist);
 
       // Soft collision for creature
       if (!this.checkWallCollision(this.creatureX + moveX, this.creatureY, 8)) {
@@ -476,5 +510,46 @@ export class GameEngine {
         this.creatureY += moveY;
       }
     }
+  }
+
+  private hasLineOfSight(x: number, y: number): boolean {
+    const distance = Math.hypot(x - this.playerX, y - this.playerY);
+    for (let d = 2; d < distance; d += 2) {
+      if (this.checkWallCollision(this.playerX + (x - this.playerX) * d / distance, this.playerY + (y - this.playerY) * d / distance, 1)) return false;
+    }
+    return true;
+  }
+
+  private nextWaypoint(tx: number, ty: number): {x: number; y: number} {
+    const sx = Math.floor(this.creatureX / this.cellSize);
+    const sy = Math.floor(this.creatureY / this.cellSize);
+    const gx = Math.floor(tx / this.cellSize);
+    const gy = Math.floor(ty / this.cellSize);
+    if (sx === gx && sy === gy) return {x: tx, y: ty};
+    const queue = [[sx, sy]];
+    const parents = new Map<string, number[]>();
+    parents.set(`${sx},${sy}`, [sx, sy]);
+    for (const [x, y] of queue) {
+      if (x === gx && y === gy) break;
+      const cell = this.grid[y][x];
+      for (const [nx, ny, blocked] of [[x, y - 1, cell.top], [x + 1, y, cell.right], [x, y + 1, cell.bottom], [x - 1, y, cell.left]] as [number, number, boolean][]) {
+        const key = `${nx},${ny}`;
+        if (!blocked && nx >= 0 && ny >= 0 && nx < this.cols && ny < this.rows && !parents.has(key)) {
+          parents.set(key, [x, y]); queue.push([nx, ny]);
+        }
+      }
+    }
+    let next = [gx, gy];
+    if (!parents.has(`${gx},${gy}`)) return {x: this.creatureX, y: this.creatureY};
+    while (true) {
+      const parent = parents.get(`${next[0]},${next[1]}`)!;
+      if (parent[0] === sx && parent[1] === sy) break;
+      next = parent;
+    }
+    const centerX = sx * this.cellSize + this.cellSize / 2;
+    const centerY = sy * this.cellSize + this.cellSize / 2;
+    // Align with the doorway before entering the neighboring room.
+    if ((next[0] !== sx && Math.abs(this.creatureY - centerY) > 2) || (next[1] !== sy && Math.abs(this.creatureX - centerX) > 2)) return {x: centerX, y: centerY};
+    return {x: next[0] * this.cellSize + this.cellSize / 2, y: next[1] * this.cellSize + this.cellSize / 2};
   }
 }

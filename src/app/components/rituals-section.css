@@ -1,0 +1,55 @@
+:host { display:block; }
+.aged-paper p { font-size:clamp(13px,1.1vw,16px); line-height:1.6; }
+.aged-paper nav button:focus-visible { outline:2px solid #7a1f1a; outline-offset:-2px; }
+.ritual-stage { isolation:isolate; padding-top:46px; background:radial-gradient(ellipse at 50% 75%,#382219 0%,#17110e 45%,#060706 100%); box-shadow:inset 0 0 65px #000,0 12px 24px #0005; }
+.ritual-stage::before { content:''; position:absolute; inset:0; pointer-events:none; z-index:-1; opacity:.15; background:repeating-linear-gradient(95deg,transparent 0 24px,#ad744a 25px,transparent 27px); }
+.stage-caption { position:absolute; top:12px; left:14px; right:14px; font:9px/1.6 monospace; letter-spacing:2px; color:#bc9572; border-bottom:1px solid #79513460; padding-bottom:8px; }
+.ritual-stage button:focus-visible { outline:2px solid #d9a441; outline-offset:4px; }
+.ritual-stage button:disabled { opacity:.5; cursor:wait; }
+.mirror-surface { width:200px; height:270px; touch-action:none; border:9px ridge #6c5140; box-shadow:0 0 0 3px #211611,0 18px 35px #000,inset 0 0 35px #000; }
+.mirror-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); filter:grayscale(.8) contrast(1.3) brightness(.65); }
+.mirror-video.corrupted { filter:grayscale(1) contrast(2) brightness(.35) sepia(.8); }
+.mirror-fog { position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(120deg,transparent 0 30px,#fff5 32px,transparent 34px),radial-gradient(ellipse,#8b121870,transparent); }
+.mirror-surface > div.text-center { z-index:2; text-shadow:0 2px 5px #000; }
+.mary-apparition { position:absolute; top:18%; right:4%; width:65px; height:180px; background:linear-gradient(#080608 0 40%,#351113); border-radius:48% 48% 15% 15%; box-shadow:0 0 24px #a6192066; opacity:.55; }
+.mary-apparition.revealed { right:25%; transform:scale(1.5); opacity:1; transition:transform .4s; }
+.mary-apparition i { position:absolute; top:26%; left:24%; width:8px; height:3px; background:#e7d6ba; box-shadow:0 0 9px red; }
+.mary-apparition i + i { left:62%; }
+.mary-apparition span { position:absolute; top:39%; left:40%; height:26px; width:12px; border-radius:50%; background:#a9121e; }
+.camera-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.camera-actions button,.close-session { border:1px solid #92714e; background:#241914; color:#dbc7a8; padding:8px 10px; font:11px monospace; cursor:pointer; }
+.camera-note { font:10px/1.6 monospace; color:#b5aa98; max-width:300px; margin:auto; }
+.spirit-board { min-height:205px; padding-bottom:55px!important; background:radial-gradient(ellipse,#64442b,#25170f)!important; border:5px ridge #765638!important; box-shadow:inset 0 0 30px #000; }
+.planchette { position:absolute; left:calc(50% - 24px); top:calc(50% - 28px); pointer-events:none; opacity:.85; }
+.spirit-board > div:last-child { position:absolute; bottom:12px; left:8px; right:8px; color:#f0c699; }
+.board-letter { display:inline-block; font:bold 17px Georgia,serif; color:#e1c993; padding:3px; }
+[data-ritual="charlie"] .select-none { background:linear-gradient(20deg,#bca884,#e6d5ae)!important; transform:rotate(-3deg); box-shadow:0 15px 30px #000; }
+[data-ritual="charlie"] .grid { color:#34251c!important; }
+[data-ritual="name_candle"] { background:radial-gradient(ellipse at 50% 30%,#5f351b,#130c09 65%); }
+[data-ritual="name_candle"] .animate-pulse { animation:flame-dance 1.4s ease-in-out infinite; }
+.elevator-doors { height:140px; max-width:210px; margin:0 auto 15px; display:flex; position:relative; overflow:hidden; border:7px ridge #756b60; background:#000; }
+.elevator-doors > div { width:50%; height:100%; background:repeating-linear-gradient(90deg,#343633 0 3px,#454743 4px 5px); border:1px solid #151716; transition:transform 1.8s; z-index:2; }
+.elevator-doors.open > div:first-child { transform:translateX(-95%); }
+.elevator-doors.open > div:nth-child(2) { transform:translateX(95%); }
+.door-presence { position:absolute; left:40%; top:18%; width:38px; height:130px; border-radius:50% 50% 0 0; background:linear-gradient(#cabaaa 0 24%,#291015 25%); }
+.tape-hall { height:100px; background:repeating-linear-gradient(0deg,#0004 0 2px,transparent 3px 5px),linear-gradient(90deg,#222c24,#000 45% 55%,#222c24); clip-path:polygon(0 0,100% 0,90% 100%,10% 100%); position:relative; }
+.tape-hall span { display:none; position:absolute; left:47%; top:20%; width:20px; height:70px; background:#a69f8b; border-radius:50% 50% 0 0; }
+.tape-hall.playing span { display:block; animation:tape-approach 8s ease-in-out infinite; }
+.tracking-label { display:flex; gap:10px; align-items:center; font:10px monospace; color:#aaa; margin-top:12px; }
+.tracking-label input { width:100%; accent-color:#a33c32; }
+.haunted-window { width:190px; height:145px; margin:auto; border:9px ridge #604b3d; background:radial-gradient(circle at 70% 20%,#838d87,#142026 25%,#040b10 70%); position:relative; overflow:hidden; }
+.haunted-window::before,.haunted-window::after { content:''; position:absolute; background:#493528; z-index:3; }
+.haunted-window::before { left:48%; top:0; width:7px; height:100%; }
+.haunted-window::after { top:48%; left:0; height:7px; width:100%; }
+.rain { position:absolute; inset:-50%; background:repeating-linear-gradient(105deg,transparent 0 17px,#a2bac530 18px,transparent 19px); animation:rainfall 1.2s linear infinite; }
+.window-figure { position:absolute; bottom:-30px; left:32%; width:55px; height:110px; border-radius:45% 45% 0 0; background:#020202; opacity:0; transition:opacity 2s; }
+.revealed .window-figure { opacity:1; }
+.evp-wave { display:flex; align-items:center; justify-content:center; gap:5px; height:65px; border:1px solid #63523e; background:#080f0d; box-shadow:inset 0 0 25px #000; }
+.evp-wave i { width:4px; background:#5b9473; transform:scaleY(.15); }
+.evp-wave.listening i { animation:evp-signal .65s ease-in-out infinite alternate; }
+@keyframes flame-dance { 50% { transform:skew(8deg) scale(.85,1.15); filter:brightness(1.4); } }
+@keyframes tape-approach { 70% { transform:scale(1.8); } 75% { opacity:0; } }
+@keyframes rainfall { to { transform:translateY(25px); } }
+@keyframes evp-signal { to { transform:scaleY(1); } }
+@media(max-width:640px) { .mirror-surface { width:165px; height:220px; } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }

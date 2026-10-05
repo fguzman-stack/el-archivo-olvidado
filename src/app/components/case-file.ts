@@ -4,6 +4,7 @@ import {ProgressTracker} from '../services/progress';
 import {AudioEngine} from '../services/audio-engine';
 import {EffectsController} from '../services/effects';
 import {Character, CATEGORY_COLORS} from '../data/characters.data';
+import {CHARACTER_IMAGE_MAP} from '../data/character-images.data';
 import {MatIconModule} from '@angular/material/icon';
 import {CharacterAtmosphere} from './character-atmosphere';
 import {CharacterPortraitPipe} from './character-portrait.pipe';
@@ -301,16 +302,26 @@ type DossierEffect =
                             <div class="absolute inset-0 bg-radial from-white/15 via-transparent to-transparent pointer-events-none z-10 animate-mist-drift"></div>
                           }
 
-                          <!-- Silhouette SVG -->
-                          <svg
-                            viewBox="0 0 100 100"
-                            class="w-4/5 h-4/5 relative z-5 transition-transform duration-500 hover:scale-105"
-                            [class.animate-char-twitch]="hasGlitch"
-                            [innerHTML]="char | characterPortrait"
-                          ></svg>
+                          <!-- 5. Real Photo or Silhouette SVG fallback -->
+                          @if (getCharacterImage(char.id)) {
+                            <img
+                              [src]="getCharacterImage(char.id)!"
+                              [alt]="char.name"
+                              class="absolute inset-0 w-full h-full object-cover relative z-5 transition-transform duration-500 hover:scale-105"
+                              [class.animate-char-twitch]="hasGlitch"
+                              (error)="onImageError(char.id)"
+                            />
+                          } @else {
+                            <svg
+                              viewBox="0 0 100 100"
+                              class="w-4/5 h-4/5 relative z-5 transition-transform duration-500 hover:scale-105"
+                              [class.animate-char-twitch]="hasGlitch"
+                              [innerHTML]="char | characterPortrait"
+                            ></svg>
+                          }
 
-                          <!-- Demonic Glowing Eyes -->
-                          @if (eyeColor && !isUvActive()) {
+                          <!-- Demonic Glowing Eyes (only on silhouette) -->
+                          @if (eyeColor && !getCharacterImage(char.id) && !isUvActive()) {
                             <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-15">
                               <div class="flex items-center gap-3.5 animate-eye-glow" [style.color]="eyeColor">
                                 <span class="w-2 h-2 rounded-full bg-current shadow-[0_0_10px_currentColor]"></span>
@@ -909,5 +920,17 @@ export class CaseFile {
 
   getUvCoordinates(char: Character): string {
     return `COORD: 47°18'N 122°08'W // SIGIL_${char.category.toUpperCase()}`;
+  }
+
+  private readonly imageMap = CHARACTER_IMAGE_MAP;
+  private readonly brokenImages = new Set<string>();
+
+  getCharacterImage(id: string): string | null {
+    if (this.brokenImages.has(id)) return null;
+    return this.imageMap[id] ?? null;
+  }
+
+  onImageError(id: string): void {
+    this.brokenImages.add(id);
   }
 }

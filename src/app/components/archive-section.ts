@@ -1,5 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {CHARACTERS, Character, CATEGORY_COLORS} from '../data/characters.data';
+import {CHARACTER_IMAGE_MAP} from '../data/character-images.data';
 import {ThemeController} from '../services/theme';
 import {ProgressTracker} from '../services/progress';
 import {AudioEngine} from '../services/audio-engine';
@@ -164,16 +165,27 @@ import {CharacterPortraitPipe} from './character-portrait.pipe';
                   <div class="absolute inset-0 bg-radial from-white/10 via-transparent to-transparent pointer-events-none z-10 animate-mist-drift"></div>
                 }
 
-                <!-- 5. Main Character Silhouette SVG with dynamic zoom and twitch -->
-                <svg
-                  viewBox="0 0 100 100"
-                  class="w-4/5 h-4/5 transition-transform duration-500 group-hover:scale-110 relative z-5"
-                  [class.animate-char-twitch]="hasGlitch"
-                  [innerHTML]="char | characterPortrait"
-                ></svg>
+                <!-- 5. Character Image (real photo) with SVG silhouette fallback -->
+                @if (getCharacterImage(char.id)) {
+                  <img
+                    [src]="getCharacterImage(char.id)!"
+                    [alt]="char.name"
+                    loading="lazy"
+                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 z-5"
+                    [class.animate-char-twitch]="hasGlitch"
+                    (error)="onImageError($event, char)"
+                  />
+                } @else {
+                  <svg
+                    viewBox="0 0 100 100"
+                    class="w-4/5 h-4/5 transition-transform duration-500 group-hover:scale-110 relative z-5"
+                    [class.animate-char-twitch]="hasGlitch"
+                    [innerHTML]="char | characterPortrait"
+                  ></svg>
+                }
 
-                <!-- 6. Demonic Glowing Eyes Overlay (Visible on mobile, intensifies on hover) -->
-                @if (eyeColor) {
+                <!-- 6. Demonic Glowing Eyes Overlay (For silhouette fallback, intensifies on hover) -->
+                @if (eyeColor && !getCharacterImage(char.id)) {
                   <div
                     class="absolute inset-0 flex items-center justify-center pointer-events-none z-15 opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   >
@@ -320,6 +332,20 @@ export class ArchiveSection {
       return '#a855f7'; // Liminal purple
     }
     return '#e11d48';
+  }
+
+  private readonly imageMap = CHARACTER_IMAGE_MAP;
+  /** IDs whose image failed to load – renders SVG fallback */
+  private readonly brokenImages = new Set<string>();
+
+  getCharacterImage(id: string): string | null {
+    if (this.brokenImages.has(id)) return null;
+    return this.imageMap[id] ?? null;
+  }
+
+  onImageError(event: Event, char: Character): void {
+    this.brokenImages.add(char.id);
+    (event.target as HTMLImageElement).style.display = 'none';
   }
 
   getRotation(id: string): number {

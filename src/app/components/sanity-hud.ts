@@ -8,7 +8,7 @@ import {MatIconModule} from '@angular/material/icon';
   imports: [MatIconModule],
   template: `
     <aside
-      class="fixed top-2 left-2 sm:top-3 sm:left-3 md:top-5 md:left-5 z-40 bg-[#0a0908]/95 backdrop-blur-md border border-[#7a1f1a]/50 p-1.5 sm:p-2 md:p-3 rounded-xs shadow-[0_4px_20px_rgba(0,0,0,0.95)] transition-all duration-300 max-w-[calc(100vw-70px)] sm:max-w-none"
+      class="fixed bottom-2 right-2 sm:bottom-3 sm:right-3 md:bottom-5 md:right-5 z-40 bg-[#0a0908]/95 backdrop-blur-md border border-[#7a1f1a]/50 p-1.5 sm:p-2 md:p-3 rounded-xs shadow-[0_4px_20px_rgba(0,0,0,0.95)] transition-all duration-300 max-w-[calc(100vw-70px)] sm:max-w-none"
       [class.border-red-600]="sanity.sanity() < 30"
       [class.animate-pulse]="sanity.sanity() < 15"
       role="region"

@@ -9,7 +9,7 @@ import {MatIconModule} from '@angular/material/icon';
   imports: [MatIconModule],
   template: `
     <aside
-      class="fixed bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-5 md:left-5 z-40 flex items-center gap-1 sm:gap-2 bg-[#0a0908]/95 backdrop-blur-md border border-[#7a1f1a]/50 p-1 sm:p-1.5 md:p-2 rounded-xs shadow-[0_4px_20px_rgba(0,0,0,0.9)] max-w-[calc(100vw-65px)] overflow-x-auto scrollbar-none"
+      class="fixed bottom-14 left-2 sm:bottom-3 sm:left-3 md:bottom-5 md:left-5 z-40 flex items-center gap-1 sm:gap-2 bg-[#0a0908]/95 backdrop-blur-md border border-[#7a1f1a]/50 p-1 sm:p-1.5 md:p-2 rounded-xs shadow-[0_4px_20px_rgba(0,0,0,0.9)] max-w-[calc(100vw-65px)] overflow-x-auto scrollbar-none"
       aria-label="Controles de accesibilidad, atmósfera y música de terror"
     >
       <!-- Vintage Rotary Knob for Reduced / Full Effects -->

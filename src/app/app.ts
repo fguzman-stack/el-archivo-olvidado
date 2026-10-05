@@ -28,6 +28,7 @@ import {EffectsController} from './services/effects';
 import {SanityController} from './services/sanity';
 import {AudioEngine} from './services/audio-engine';
 import {GameRoom} from './components/game-room';
+import {ThreeAmHaunting} from './components/three-am-haunting';
 
 @Component({
   selector: 'app-root',
@@ -46,6 +47,7 @@ import {GameRoom} from './components/game-room';
     SanityHud,
     HallucinationOverlay,
     GameRoom,
+    ThreeAmHaunting,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',

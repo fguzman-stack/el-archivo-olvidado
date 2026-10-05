@@ -380,3 +380,38 @@
   box-shadow: 0 0 10px rgba(217, 119, 6, 0.65);
   animation: dossierEmber 3.2s ease-in-out infinite;
 }
+
+/* Ink-dark forensic stains, confined to paper margins. */
+.blood-corner { position:absolute; top:-3px; left:-3px; width:110px; height:145px; opacity:.85; }
+.blood-corner.corner-right { left:auto; right:-3px; transform:scaleX(-1); }
+.blood-corner.corner-bottom { top:auto; bottom:-3px; transform:rotate(180deg); }
+.blood-corner.corner-bottom.corner-right { transform:scaleY(-1); }
+.blood-impact { background:#751511; border-radius:37% 63% 49% 51% / 61% 29% 71% 39%; box-shadow:8px -9px 0 -5px #801912,-12px 7px 0 -4px #68100d,14px 12px 0 -6px #751511; }
+.aged-paper > button[aria-label^="Tocar mancha"] { background:transparent!important; filter:none; animation:none; border-radius:0; width:48px; height:48px; }
+.aged-paper > button[aria-label^="Tocar mancha"]:focus-visible { outline:2px solid #9b261d; outline-offset:-4px; }
+.case-annotation { margin:12px 0 20px; padding:14px 18px; border-left:2px solid #795944; background:rgba(94,66,43,.055); }
+.case-annotation span { font:10px 'Special Elite',monospace; letter-spacing:2px; color:#754130; }
+.case-annotation p { font:italic 16px/1.6 'IM Fell English',Georgia,serif; margin:6px 0; }
+.case-annotation small { font:11px/1.5 'Special Elite',monospace; color:#645344; }
+.dossier-effect-layer[data-effect="static"] { opacity:.22; }
+
+.camera-frame { box-shadow:inset 0 0 80px rgba(0,0,0,.12); }
+.camera-status { position:absolute; top:18px; right:24px; color:#b34737; font:10px monospace; letter-spacing:2px; }
+.camera-status span { color:#bcb5a7; margin-left:12px; }
+.camera-interruption { position:absolute; inset:0; background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.08) 3px 4px); animation:camera-hitch .14s steps(2) infinite; }
+.camera-tracking { position:absolute; inset:35% 0 auto; height:30px; background:linear-gradient(transparent,rgba(210,219,218,.22),transparent); }
+.camera-error { position:absolute; bottom:12%; left:5%; color:#dad4c8; font:12px monospace; letter-spacing:3px; }
+@keyframes camera-hitch { 0% { transform:translateY(-3px); } 100% { transform:translateY(5px); } }
+.flashlight-mask { background:radial-gradient(circle var(--flashlight-radius) at var(--flashlight-x) var(--flashlight-y),transparent 0%,rgba(0,0,0,.04) 55%,rgba(0,0,0,.22) 100%); }
+.flashlight-mask.game-lighting { background:none; }
+
+.game-section { padding:64px 5vw 76px; background:radial-gradient(ellipse at top,#251513,#080908 65%); display:flex; flex-direction:column; gap:20px; }
+.game-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; }
+.game-eyebrow { font:10px monospace; letter-spacing:3px; color:#b27960; }
+.game-heading h2 { font:clamp(24px,4vw,48px) 'IM Fell English SC',Georgia,serif; letter-spacing:4px; margin:4px 0; color:#e3d8c5; }
+.game-heading p { font:italic 14px Georgia,serif; color:#aaa394; }
+.game-controls { font:11px/1.8 monospace; color:#c4baa9; }
+.game-stage { flex:1; min-height:0; width:100%; max-width:1440px; margin:auto; border:1px solid #48332a; box-shadow:0 24px 80px #000; }
+.game-stage app-maze-game { display:block; height:100%; }
+@media(max-width:640px) { .game-section { padding:66px 12px 90px; gap:12px; } .game-heading { flex-direction:column; align-items:flex-start; gap:6px; } .game-controls { font-size:9px; } .blood-corner { width:75px; height:100px; } }
+@media(prefers-reduced-motion:reduce) { .camera-interruption,.animate-dossier-blood-splash { animation:none; } }

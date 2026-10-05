@@ -95,24 +95,21 @@ type DossierEffect =
 
               <div class="absolute inset-0 pointer-events-none z-0 dossier-effect-layer" [attr.data-effect]="dossierEffect">
                 @if (dossierEffect === 'blood') {
-                  <div class="absolute -top-5 -left-6 w-24 h-24 sm:w-36 sm:h-36 bg-[#7a1f1a]/35 rounded-full blur-xl animate-dossier-blood-pulse"></div>
-                  <div class="absolute -top-8 -right-8 w-28 h-28 sm:w-44 sm:h-44 bg-[#a01a14]/25 rounded-full blur-lg animate-dossier-blood-pulse" style="animation-delay: .8s;"></div>
-                  <div class="absolute -bottom-7 -left-8 w-28 h-28 sm:w-40 sm:h-40 bg-[#5a100c]/25 rounded-full blur-xl"></div>
-                  <div class="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(80,7,5,.42),transparent)] animate-dossier-blood-run"></div>
+                  @for (corner of [0, 1, 2, 3]; track corner) {
+                    <svg class="blood-corner" [class.corner-right]="corner % 2 === 1" [class.corner-bottom]="corner > 1" viewBox="0 0 160 180" aria-hidden="true">
+                      <path fill="#63100e" d="M0 0H78L72 12 93 22 68 28 82 40 55 36 63 58 43 47 37 71 28 53 12 68 0 49Z"/>
+                      <path fill="#941e17" d="M0 0H48L52 14 40 20 51 29 30 28 34 42 20 33 10 44 0 35Z"/>
+                      <path fill="#64110e" d="M12 35Q18 62 14 104Q13 115 16 115Q20 115 18 102L22 42ZM40 27Q43 52 42 73Q40 81 43 82Q47 81 46 74L47 28Z"/>
+                      <g fill="#72130f"><ellipse cx="88" cy="48" rx="3" ry="7" transform="rotate(-40 88 48)"/><circle cx="63" cy="78" r="3"/><circle cx="104" cy="23" r="2"/><ellipse cx="30" cy="91" rx="2" ry="4"/><circle cx="78" cy="96" r="1.5"/><circle cx="51" cy="117" r="2"/></g>
+                    </svg>
+                  }
                   @for (splash of getEffectMarks(intensity); track splash) {
                     <span
-                      class="absolute rounded-full bg-[#7a1f1a]/65 shadow-[0_0_12px_rgba(122,31,26,0.55)] animate-dossier-blood-splash"
-                      [style.left.%]="(splash * 17 + 9) % 86"
-                      [style.top.%]="(splash * 29 + 7) % 82"
+                      class="blood-impact absolute animate-dossier-blood-splash"
+                      [style.left.%]="splash % 2 === 0 ? 88 + splash % 5 : 2 + splash % 5"
+                      [style.top.%]="(splash * 29 + 7) % 90"
                       [style.width.px]="6 + ((splash * 5) % 18)"
                       [style.height.px]="6 + ((splash * 7) % 22)"
-                    ></span>
-                    <span
-                      class="absolute w-0.5 bg-[#4a0705]/55 rounded-b-full animate-dossier-drip"
-                      [style.left.%]="(splash * 13 + 3) % 92"
-                      [style.top.%]="(splash * 11) % 38"
-                      [style.height.px]="18 + ((splash * 9) % 70)"
-                      [style.animationDelay.s]="splash * .12"
                     ></span>
                   }
                 } @else if (dossierEffect === 'static') {
@@ -163,6 +160,12 @@ type DossierEffect =
               <div class="relative z-10 w-full flex items-center justify-center gap-8 sm:gap-16 mb-2 sm:mb-4 select-none pointer-events-none">
                 <div class="w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full bg-[#201813] border border-black/40 shadow-inner"></div>
                 <div class="w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full bg-[#201813] border border-black/40 shadow-inner"></div>
+              </div>
+
+              <div class="case-annotation relative z-10">
+                <span>REGISTRO DE CAMPO · {{ char.name }}</span>
+                <p>«{{ char.proximitySign }}»</p>
+                <small>La evidencia no debe interpretarse fuera del contexto del testimonio. Examina la fotografía con luz UV.</small>
               </div>
 
               <!-- Sheet Navigation Tabs (Flipping between piled sheets in the dossier) -->
@@ -450,9 +453,8 @@ type DossierEffect =
 
                     <!-- Blood Splatters on Paper -->
                     @if (char.artifact.paperStyle === 'blood') {
-                      <div class="absolute top-2 right-4 w-32 h-32 bg-[#7a1f1a]/30 rounded-full blur-xl pointer-events-none"></div>
-                      <div class="absolute -bottom-6 -left-6 w-28 h-28 bg-[#a01a14]/25 rounded-full blur-lg pointer-events-none"></div>
-                      <div class="absolute top-1/2 right-1/4 w-3 h-14 bg-[#7a1f1a]/40 rotate-12 rounded-full pointer-events-none"></div>
+                      <div class="blood-impact absolute top-3 right-4 w-5 h-7 pointer-events-none"></div>
+                      <div class="blood-impact absolute bottom-4 left-3 w-7 h-5 pointer-events-none"></div>
                     }
 
                     <!-- Glitch Tracking Scanlines -->
@@ -716,9 +718,8 @@ export class CaseFile {
   intensifyDossierEffect(event: MouseEvent): void {
     event.stopPropagation();
     this.dossierEffectIntensity.update(value => Math.min(value + 3, 18));
-    this.effects.triggerGlitch(2, 160);
     this.audio.playClick();
-    this.audio.playChillingStinger();
+    this.audio.playPaperTurn();
   }
 
   getEffectMarks(count: number): number[] {

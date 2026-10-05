@@ -71,6 +71,7 @@
   <div
     class="flashlight-mask fixed inset-0 z-35 pointer-events-none"
     [class.reading-mode]="effects.readingMode()"
+    [class.game-lighting]="activeSection() === 'juego'"
     aria-hidden="true"
   ></div>
 

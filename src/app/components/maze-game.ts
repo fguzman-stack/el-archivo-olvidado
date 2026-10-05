@@ -8,7 +8,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import {GameEngine, Item} from '../services/game-engine';
+import {GameEngine} from '../services/game-engine';
 import {ProgressTracker} from '../services/progress';
 import {EffectsController} from '../services/effects';
 import {MatIconModule} from '@angular/material/icon';
@@ -52,7 +52,7 @@ interface Projection {
           #gameCanvas
           width="640"
           height="360"
-          class="w-full h-full max-h-[220px] xs:max-h-[250px] sm:max-h-[300px] md:max-h-[330px] object-contain rounded-xs bg-black cursor-crosshair"
+          class="w-full h-full object-contain rounded-xs bg-black cursor-crosshair"
         ></canvas>
 
         <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_48%,transparent_32%,rgba(0,0,0,.55)_65%,rgba(0,0,0,.92)_100%)] mix-blend-multiply"></div>
@@ -91,7 +91,7 @@ interface Projection {
         }
 
         @if (engine.status() === 'LOST') {
-          <div class="absolute inset-0 bg-[#120000]/95 flex flex-col items-center justify-center p-2 sm:p-4 text-center z-20 space-y-1.5 sm:space-y-2 font-mono text-red-500 animate-strobe-fast">
+          <div class="absolute inset-0 bg-[#120000]/95 flex flex-col items-center justify-center p-2 sm:p-4 text-center z-20 space-y-1.5 sm:space-y-2 font-mono text-red-500">
             <mat-icon class="text-3xl sm:text-5xl text-red-600 animate-pulse">dangerous</mat-icon>
             <h3 class="text-base sm:text-xl md:text-2xl font-bold tracking-[0.25em] text-red-500">TE VIO</h3>
             <p class="text-[10px] sm:text-xs text-zinc-300 max-w-xs">La transmisión termina con uñas contra el vidrio.</p>
@@ -178,6 +178,12 @@ export class MazeGame implements OnInit, OnDestroy {
     this.keysPressed.delete(e.key.toLowerCase());
   }
 
+  @HostListener('window:blur')
+  clearInputs(): void {
+    this.keysPressed.clear();
+    this.clearMobileDir();
+  }
+
   setMobileDir(x: number, y: number): void {
     this.mobileTurn = x;
     this.mobileForward = -y;
@@ -226,6 +232,7 @@ export class MazeGame implements OnInit, OnDestroy {
 
     this.drawCorridor(c, w, h);
     this.drawItems3d(c, w, h);
+    this.drawExit(c, h);
     this.drawCreature3d(c, w, h);
     this.drawHudNoise(c, w, h);
   }
@@ -265,6 +272,17 @@ export class MazeGame implements OnInit, OnDestroy {
       const blue = Math.floor(15 + shade * 22);
       c.fillStyle = hit.vertical ? `rgb(${red},${green},${blue})` : `rgb(${Math.max(8, red - 24)},${green},${blue})`;
       c.fillRect(sx, wallTop, strip + 1, wallHeight);
+
+      // Perspective masonry and damp seams, anchored to the world hit.
+      const textureX = (hit.vertical ? hit.y : hit.x) % this.engine.cellSize;
+      if (textureX < 1.2) {
+        c.fillStyle = 'rgba(0,0,0,.38)';
+        c.fillRect(sx, wallTop, strip, wallHeight);
+      }
+      for (let course = 1; course < 7; course++) {
+        c.fillStyle = 'rgba(0,0,0,.25)';
+        c.fillRect(sx, wallTop + wallHeight * course / 7, strip, Math.max(1, wallHeight / 180));
+      }
 
       if (shade > 0.45 && sx % 18 === 0) {
         c.fillStyle = `rgba(0,0,0,${0.22 - shade * 0.08})`;
@@ -376,11 +394,32 @@ export class MazeGame implements OnInit, OnDestroy {
     while (rel < -Math.PI) rel += Math.PI * 2;
     while (rel > Math.PI) rel -= Math.PI * 2;
     if (Math.abs(rel) > this.fov * 0.62 || dist < 1) return null;
+    // Objects must disappear behind walls instead of glowing through them.
+    const obstruction = this.castRay3d(this.engine.playerX, this.engine.playerY, Math.atan2(dy, dx), dist);
+    if (obstruction.dist < dist - 4) return null;
     return {
       x: (0.5 + rel / this.fov) * this.viewWidth,
       size: Math.max(7, (this.engine.cellSize * 190) / dist),
       dist,
     };
+  }
+
+  private drawExit(c: CanvasRenderingContext2D, h: number): void {
+    const door = this.project(this.engine.exitX, this.engine.exitY);
+    if (!door) return;
+    const height = door.size * 2;
+    c.save();
+    c.fillStyle = '#17221d';
+    c.fillRect(door.x - height * .23, h / 2 - height / 2, height * .46, height);
+    c.strokeStyle = this.engine.hasKey() ? '#5ce0a1' : '#9c5647';
+    c.lineWidth = 2;
+    c.strokeRect(door.x - height * .23, h / 2 - height / 2, height * .46, height);
+    c.fillStyle = this.engine.hasKey() ? '#5ce0a1' : '#b99b71';
+    c.font = `${Math.max(8, height * .09)}px monospace`;
+    c.textAlign = 'center';
+    c.fillText('EXIT', door.x, h / 2 - height * .28);
+    c.fillRect(door.x + height * .14, h / 2, 3, 3);
+    c.restore();
   }
 
   private castRay3d(ox: number, oy: number, angle: number, maxDist: number): RayHit {

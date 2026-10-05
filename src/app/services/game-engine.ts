@@ -415,7 +415,7 @@ export class GameEngine {
     const distToPlayer = Math.hypot(dx, dy);
 
     // Check if player's flashlight is shining on creature
-    const angleToCreature = Math.atan2(dy, dx);
+    const angleToCreature = Math.atan2(-dy, -dx);
     let diffAngle = angleToCreature - this.playerAngle;
     while (diffAngle < -Math.PI) diffAngle += Math.PI * 2;
     while (diffAngle > Math.PI) diffAngle -= Math.PI * 2;

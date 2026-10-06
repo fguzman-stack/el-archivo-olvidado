@@ -1,5 +1,7 @@
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {GameEngine} from './game-engine';
+import {MobileRenderQuality} from './mobile-render-quality';
 
 /** Loaded only when entering the game. All art is generated locally. */
 export class HouseWorld {
@@ -28,10 +30,20 @@ export class HouseWorld {
   private lastTrail = -1;
   private wallMatrices: THREE.Matrix4[] = [];
   private trimMatrices: THREE.Matrix4[] = [];
+  private readonly mobile = matchMedia('(pointer: coarse)').matches;
+  private readonly mobileQuality = new MobileRenderQuality(devicePixelRatio);
+  private resizeObserver: ResizeObserver | null = null;
+  private viewportWidth = 0;
+  private viewportHeight = 0;
+  private sizeDirty = true;
+  private mobileLamp = new THREE.PointLight(0xaf6938, .8, 7);
+  private lampPositions: THREE.Vector3[] = [];
+  private lastVisibilityCheck = -1;
+  private mobileMaterials = new Map<number, THREE.MeshLambertMaterial>();
 
   constructor(canvas: HTMLCanvasElement, private engine: GameEngine) {
-    this.renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    this.renderer = new THREE.WebGLRenderer({canvas, antialias: !this.mobile, powerPreference: 'high-performance'});
+    this.renderer.setPixelRatio(this.mobile ? this.mobileQuality.pixelRatio : Math.min(devicePixelRatio, 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.25;
@@ -40,11 +52,64 @@ export class HouseWorld {
     this.scene.add(new THREE.AmbientLight(0x87998d, .48));
     this.scene.add(this.root, this.flashlight, this.target);
     this.flashlight.target = this.target;
+    if (this.mobile) {
+      this.root.add(this.mobileLamp);
+      // Read layout only on resize, rather than once per animation frame.
+      this.viewportWidth = canvas.clientWidth; this.viewportHeight = canvas.clientHeight;
+      this.resizeObserver = new ResizeObserver(entries => {
+        this.viewportWidth = Math.round(entries[0].contentRect.width);
+        this.viewportHeight = Math.round(entries[0].contentRect.height);
+        this.sizeDirty = true;
+      });
+      this.resizeObserver.observe(canvas);
+    }
     this.build();
+    if (this.mobile) {
+      // Merge only within each animated body part: limbs remain independently animated.
+      for (const group of [this.jeff, this.painter, this.slender, this.dog, this.tv]) this.batchMobileParts(group);
+    }
   }
 
-  private material(color: number, roughness = .85): THREE.MeshStandardMaterial {
-    return new THREE.MeshStandardMaterial({color, roughness});
+  private surface(options: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial | THREE.MeshLambertMaterial {
+    if (!this.mobile) return new THREE.MeshStandardMaterial(options);
+    // Lambert retains textures, fog and the flashlight without per-pixel PBR BRDFs.
+    const lambert = {...options};
+    delete lambert.roughness; delete lambert.metalness;
+    return new THREE.MeshLambertMaterial(lambert);
+  }
+
+  private material(color: number, roughness = .85): THREE.MeshStandardMaterial | THREE.MeshLambertMaterial {
+    if (this.mobile) {
+      let material = this.mobileMaterials.get(color);
+      if (!material) { material = new THREE.MeshLambertMaterial({color}); this.mobileMaterials.set(color, material); }
+      return material;
+    }
+    return this.surface({color, roughness});
+  }
+
+  private batchMobileParts(group: THREE.Group): void {
+    const batches = new Map<THREE.Material, THREE.Mesh[]>();
+    for (const child of group.children) {
+      if (child instanceof THREE.Group) this.batchMobileParts(child);
+      if (!(child instanceof THREE.Mesh) || Array.isArray(child.material) || child.material.transparent || child.children.length) continue;
+      const meshes = batches.get(child.material) ?? [];
+      meshes.push(child); batches.set(child.material, meshes);
+    }
+    for (const [material, meshes] of batches) {
+      if (meshes.length < 2) continue;
+      const geometries = meshes.map(mesh => {
+        mesh.updateMatrix();
+        const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrix);
+        if (!geometry.index) return geometry;
+        const expanded = geometry.toNonIndexed(); geometry.dispose(); return expanded;
+      });
+      const merged = mergeGeometries(geometries);
+      geometries.forEach(geometry => geometry.dispose());
+      if (!merged) continue;
+      for (const mesh of meshes) { group.remove(mesh); mesh.geometry.dispose(); }
+      merged.computeBoundingSphere();
+      group.add(new THREE.Mesh(merged, material));
+    }
   }
 
   private box(parent: THREE.Object3D, material: THREE.Material, size: number[], pos: number[]): THREE.Mesh {
@@ -53,7 +118,7 @@ export class HouseWorld {
   }
 
   private sphere(parent: THREE.Object3D, material: THREE.Material, pos: number[], size: number[]): THREE.Mesh {
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), material);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, this.mobile ? 10 : 16, this.mobile ? 8 : 12), material);
     mesh.position.set(...pos as [number, number, number]); mesh.scale.set(...size as [number, number, number]); parent.add(mesh); return mesh;
   }
 
@@ -113,12 +178,12 @@ export class HouseWorld {
   }
 
   private build(): void {
-    const wall = new THREE.MeshStandardMaterial({map: this.texture('wall'), roughness: .95});
+    const wall = this.surface({map: this.texture('wall'), roughness: .95});
     const wood = this.material(0x39271e);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 44), new THREE.MeshStandardMaterial({map: this.texture('floor'), roughness: .8}));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 44), this.surface({map: this.texture('floor'), roughness: .8}));
     floor.rotation.x = -Math.PI / 2; floor.position.set(30, 0, 22); this.root.add(floor);
     this.box(this.root, this.material(0x26271f), [60, .15, 44], [30, 3.7, 22]);
-    const blood = new THREE.MeshStandardMaterial({map: this.texture('blood'), transparent: true, depthWrite: false, roughness: .25, side: THREE.DoubleSide});
+    const blood = this.surface({map: this.texture('blood'), transparent: true, depthWrite: false, roughness: .25, side: THREE.DoubleSide});
     for (let y = 0; y < this.engine.rows; y++) {
       for (let x = 0; x < this.engine.cols; x++) {
         const cell = this.engine.grid[y][x];
@@ -144,7 +209,8 @@ export class HouseWorld {
       this.box(table, wood, [1.6, .16, .8], [0, .86, 0]);
       for (const dx of [-.65, .65]) for (const dz of [-.28, .28]) this.box(table, wood, [.1, .85, .1], [dx, .4, dz]);
       this.box(table, this.material(0xb9ab85), [.38, .025, .26], [.2, .96, 0]); this.root.add(table);
-      const lamp = new THREE.PointLight(0xaf6938, .8, 7); lamp.position.set(x, 2.7, z); this.root.add(lamp);
+      if (this.mobile) this.lampPositions.push(new THREE.Vector3(x, 2.7, z));
+      else { const lamp = new THREE.PointLight(0xaf6938, .8, 7); lamp.position.set(x, 2.7, z); this.root.add(lamp); }
     }
     // Abandoned sofa, overturned chair, bed and ceiling beams.
     const fabric = this.material(0x383b29);
@@ -170,7 +236,15 @@ export class HouseWorld {
         const ring = new THREE.Mesh(new THREE.TorusGeometry(.14, .04, 8, 16), gold); group.add(ring);
         this.box(group, gold, [.06, .35, .06], [0, -.22, 0]); this.box(group, gold, [.16, .05, .05], [.05, -.34, 0]);
       } else this.box(group, this.material(item.type === 'battery' ? 0x577357 : 0xd8cba6), item.type === 'battery' ? [.18, .4, .18] : [.5, .03, .35], [0, 0, 0]);
-      const light = new THREE.PointLight(item.type === 'key' ? 0xe8b84b : 0x93c8ac, .5, 3); group.add(light); this.root.add(group); return group;
+      if (this.mobile) {
+        group.traverse(object => {
+          if (object instanceof THREE.Mesh && object.material instanceof THREE.MeshLambertMaterial) {
+            object.material.emissive.setHex(item.type === 'key' ? 0xe8b84b : 0x93c8ac);
+            object.material.emissiveIntensity = .2;
+          }
+        });
+      } else { const light = new THREE.PointLight(item.type === 'key' ? 0xe8b84b : 0x93c8ac, .5, 3); group.add(light); }
+      this.root.add(group); return group;
     });
     const door = new THREE.Group(); door.position.set(this.engine.exitX * this.scale, 0, this.engine.exitY * this.scale);
     this.box(door, wood, [1.2, 2.8, .15], [0, 1.4, 0]);
@@ -187,7 +261,7 @@ export class HouseWorld {
   }
 
   private buildJeff(): void {
-    const cloth = this.material(0xaaa594); const dark = this.material(0x101012); const skin = new THREE.MeshStandardMaterial({map: this.texture('skin'), color: 0xb1b0a9, roughness: .88});
+    const cloth = this.material(0xaaa594); const dark = this.material(0x101012); const skin = this.surface({map: this.texture('skin'), color: 0xb1b0a9, roughness: .88});
     this.humanoid(this.jeff, cloth, dark, skin);
     const head = this.jeff.getObjectByName('head')!;
     this.sphere(head, skin, [0, 0, -.025], [.235, .31, .205]);
@@ -220,12 +294,12 @@ export class HouseWorld {
     this.tube(this.jeff, [new THREE.Vector3(0, 1.5, -.23), new THREE.Vector3(.018, 1.14, -.26), new THREE.Vector3(.01, .95, -.2)], this.material(0x716b5d), .009);
     for (const x of [-.11, .11]) this.tube(this.jeff, [new THREE.Vector3(x, 1.55, -.23), new THREE.Vector3(x * 1.2, 1.28, -.27)], dark, .006);
     this.knife(this.jeff.getObjectByName('arm-right')!, -.85);
-    const stain = new THREE.Mesh(new THREE.PlaneGeometry(.4, .6), new THREE.MeshStandardMaterial({map: this.texture('blood'), transparent: true, depthWrite: false, side: THREE.DoubleSide}));
+    const stain = new THREE.Mesh(new THREE.PlaneGeometry(.4, .6), this.surface({map: this.texture('blood'), transparent: true, depthWrite: false, side: THREE.DoubleSide}));
     stain.position.set(.07, 1.19, -.258); this.jeff.add(stain);
   }
 
   private tube(parent: THREE.Object3D, points: THREE.Vector3[], material: THREE.Material, radius: number): void {
-    parent.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 16, radius, 6, false), material));
+    parent.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), this.mobile ? 8 : 16, radius, this.mobile ? 4 : 6, false), material));
   }
 
   private humanoid(group: THREE.Group, clothing: THREE.Material, trousers: THREE.Material, skin: THREE.Material): void {
@@ -278,7 +352,7 @@ export class HouseWorld {
     c.beginPath(); c.arc(128, 116, 53, .15, Math.PI - .15); c.stroke();
     for (const x of [50, 108, 187]) { c.lineWidth = 3; c.beginPath(); c.moveTo(x, 157); c.lineTo(x + 4, 230); c.stroke(); }
     const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; this.textures.push(texture);
-    const paint = new THREE.MeshStandardMaterial({map: texture, roughness: .7});
+    const paint = this.surface({map: texture, roughness: .7});
     for (const [x, z] of [[23, 10], [42, 18], [34, 34]]) {
       const easel = new THREE.Group(); easel.position.set(x, 0, z);
       this.box(easel, this.material(0x38281a), [1.3, 1.35, .1], [0, 1.7, 0]);
@@ -320,7 +394,7 @@ export class HouseWorld {
   private buildDog(): void {
     const fur = this.material(0x3c2118);
     this.sphere(this.dog, fur, [0, .55, .2], [.45, .4, .7]);
-    this.box(this.dog, new THREE.MeshStandardMaterial({map: this.texture('dog')}), [.65, .62, .3], [0, .9, -.5]);
+    this.box(this.dog, this.surface({map: this.texture('dog')}), [.65, .62, .3], [0, .9, -.5]);
     for (const x of [-.23, .23]) {
       const ear = new THREE.Mesh(new THREE.ConeGeometry(.16, .4, 3), fur); ear.position.set(x, 1.37, -.4); this.dog.add(ear);
       for (const z of [-.15, .65]) this.box(this.dog, fur, [.12, .45, .15], [x, .22, z]);
@@ -334,25 +408,42 @@ export class HouseWorld {
     const sonic = new THREE.Group(); sonic.position.set(1.5, 0, -.1);
     this.sphere(sonic, blue, [0, 1.1, 0], [.28, .5, .22]);
     this.sphere(sonic, blue, [0, 1.75, 0], [.43, .42, .35]);
-    this.box(sonic, new THREE.MeshStandardMaterial({map: this.texture('sonic')}), [.58, .5, .04], [0, 1.75, -.33]);
+    this.box(sonic, this.surface({map: this.texture('sonic')}), [.58, .5, .04], [0, 1.75, -.33]);
     for (let i = 0; i < 5; i++) { const spike = new THREE.Mesh(new THREE.ConeGeometry(.18, .65, 4), blue); spike.position.set(Math.sin(i) * .3, 1.8 + Math.cos(i) * .3, .25); spike.rotation.x = Math.PI / 2; sonic.add(spike); }
     for (const x of [-.2, .2]) this.box(sonic, this.material(0x801b1c), [.3, .2, .5], [x, .18, -.1]);
     sonic.name = 'sonic'; this.tv.add(sonic);
   }
 
-  render(time: number): void {
-    if (this.lastRender && time - this.lastRender > .028 && time - this.lastRender < .2) this.slowFrames++;
-    else this.slowFrames = Math.max(0, this.slowFrames - 1);
-    if (this.slowFrames > 90 && this.renderer.getPixelRatio() > 1) { this.renderer.setPixelRatio(1); this.slowFrames = 0; }
-    this.lastRender = time;
+  render(time: number, frameDelta = 0): void {
+    if (this.mobile) {
+      if (frameDelta === 0) this.mobileQuality.reset();
+      else if (this.mobileQuality.sample(frameDelta)) {
+        this.renderer.setPixelRatio(this.mobileQuality.pixelRatio); this.sizeDirty = true;
+      }
+    } else {
+      if (this.lastRender && time - this.lastRender > .028 && time - this.lastRender < .2) this.slowFrames++;
+      else this.slowFrames = Math.max(0, this.slowFrames - 1);
+      if (this.slowFrames > 90 && this.renderer.getPixelRatio() > 1) { this.renderer.setPixelRatio(1); this.slowFrames = 0; }
+      this.lastRender = time;
+    }
     const canvas = this.renderer.domElement;
-    const width = canvas.clientWidth; const height = canvas.clientHeight;
+    const width = this.mobile ? this.viewportWidth : canvas.clientWidth;
+    const height = this.mobile ? this.viewportHeight : canvas.clientHeight;
     if (!width || !height) return;
     const pixelRatio = this.renderer.getPixelRatio();
-    if (canvas.width !== Math.floor(width * pixelRatio) || canvas.height !== Math.floor(height * pixelRatio)) {
+    if (this.mobile ? this.sizeDirty : canvas.width !== Math.floor(width * pixelRatio) || canvas.height !== Math.floor(height * pixelRatio)) {
       this.renderer.setSize(width, height, false); this.camera.aspect = width / height; this.camera.updateProjectionMatrix();
+      this.sizeDirty = false;
     }
     this.camera.position.set(this.engine.playerX * this.scale, 1.65, this.engine.playerY * this.scale);
+    if (this.mobile) {
+      let nearest = this.lampPositions[0];
+      for (const position of this.lampPositions) {
+        if (position.distanceToSquared(this.camera.position) < nearest.distanceToSquared(this.camera.position)) nearest = position;
+      }
+      // A fixed light count avoids shader recompilation as the player moves.
+      this.mobileLamp.position.copy(nearest);
+    }
     this.camera.rotation.order = 'YXZ';
     this.camera.rotation.set(this.engine.playerPitch, -this.engine.playerAngle - Math.PI / 2, 0);
     const direction = this.direction; this.camera.getWorldDirection(direction);
@@ -386,7 +477,9 @@ export class HouseWorld {
       const room = rooms[cycle % rooms.length];
       this.slender.position.set(room[0], 0, room[1]);
     }
-    if (this.engine.gameTime() - this.lastEncounter > 9) {
+    if (this.engine.gameTime() - this.lastEncounter > 9 && (!this.mobile || time - this.lastVisibilityCheck >= .2)) {
+      this.lastVisibilityCheck = time;
+      if (this.mobile) this.scene.updateMatrixWorld(true);
       const sight = new THREE.Vector3(); this.camera.getWorldDirection(sight);
       for (const [entity, message] of [[this.painter, 'Bloody Painter. La máscara sonríe; los cuadros todavía están húmedos.'], [this.slender, 'Slender Man. El rostro está vacío. Aparta la mirada.'], [this.dog, 'Smile Dog: «Difunde la palabra». La sonrisa no pertenece a un animal.'], [this.tv, 'Sonic.exe: «I AM GOD». El televisor no tiene cable de corriente.']] as [THREE.Group, string][]) {
         const offset = entity.position.clone().sub(this.camera.position); offset.y = 0;
@@ -410,6 +503,7 @@ export class HouseWorld {
   }
 
   dispose(): void {
+    this.resizeObserver?.disconnect();
     this.scene.traverse(object => {
       if (object instanceof THREE.InstancedMesh) object.dispose();
       if (object instanceof THREE.Mesh) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(material => material.dispose()); }

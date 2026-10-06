@@ -188,7 +188,8 @@ export class MazeGame implements OnDestroy {
   private releaseInputs(): void { this.keys.clear(); this.moves.clear(); this.lookPointer = null; }
 
   private loop = (): void => {
-    const now = performance.now(); const delta = Math.min(.05, (now - this.lastTime) / 1000); this.lastTime = now;
+    const now = performance.now(); const frameDelta = (now - this.lastTime) / 1000;
+    const delta = Math.min(.05, frameDelta); this.lastTime = now;
     if (this.active()) {
       this.animationTime += delta;
       let forward = 0; let strafe = 0;
@@ -205,7 +206,7 @@ export class MazeGame implements OnDestroy {
       this.engine.update(delta, Math.cos(angle) * forward + Math.cos(angle + Math.PI / 2) * strafe, Math.sin(angle) * forward + Math.sin(angle + Math.PI / 2) * strafe, angle);
       if (this.engine.status() !== 'PLAYING') { this.releaseInputs(); this.unlock(); }
     }
-    if (!document.hidden && (this.active() || this.needsRender)) { this.world?.render(this.animationTime); this.needsRender = false; }
+    if (!document.hidden && (this.active() || this.needsRender)) { this.world?.render(this.animationTime, this.active() ? frameDelta : 0); this.needsRender = false; }
     this.frame = requestAnimationFrame(this.loop);
   };
   ngOnDestroy(): void { this.destroyed = true; if (this.frame !== null) cancelAnimationFrame(this.frame); this.observer?.disconnect(); this.unlock(); this.world?.dispose(); this.engine.stopGame(); }
